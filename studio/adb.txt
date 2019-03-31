@@ -1,0 +1,39 @@
+命令	参数	功能
+adb devices	 	列出当前连接的设备列表
+adb server-strat	 	启动adb服务
+adb kill-server	 	停止adb服务
+adb connect	 	如果是USB连接，直接会连接ADB，如果是想通过网络连接,则需要在同一个局域网，通过IP连接
+adb disconnect	 	断开连接设备
+adb install	 	安装APP，如果apk已安装，则覆盖安装
+-r	如果apk已安装，则重新安装apk并保留数据和缓存文件
+adb uninstall	 	卸载APP，不保留数据和缓存文件
+-k	卸载 app 但保留数据和缓存文件
+adb shell pm list packages	 	列出设备上的所有包名
+-s	列出系统应用的所有包名
+-3	列出除了系统应用的第三方应用包名
+adb shell pm clear	 	清除应用数据与缓存
+adb shell am start 	 	启动APP
+-n	包名/.MianActivity
+adb shell am force-stop	 	强制停止应用
+ 	 	 
+adb push	 	向设备拷入文件
+adb pull	 	从设备拷出文件
+ 	 	 
+adb remount	 	获取文件的读写权限(有些设备并不能直接执行adb remount，必须要先获取root权限因此要先执行adb root命令)
+ 	 	 
+adb remount	 	删除系统应用
+adb shell	 
+cd system/app/	 
+ls	 
+rm *.apk	 
+ 	 	 
+ 	 	 
+adb shell	 	杀死某个进程
+ps	 
+kill pid	 
+ 	 	 
+adb logcat	 	获取日志
+adb shell wm size	 	获取屏幕分辨率
+ 	 	 
+adb tcpip 8888	 	重新设置设备连接端口
+

@@ -1,0 +1,17 @@
+productFlavors { wisdom { //基础版本.
+        applicationId "应用包名"
+        resValue "string", "app_name", "应用名称"
+        manifestPlaceholders = 
+[app_icon     : "应用图标", package_name : applicationId, //下面这些配置根据自己需求进行各自配置  WEIBO_APPKEY : "微博APPKEY", JPUSH_PKGNAME: 接受推送的包名, JPUSH_APPKEY : "极光推送的APPKEY", //JPush上注册的包名对应的appkey.
+                                JPUSH_CHANNEL: "developer-default", //暂时填写默认值即可.
+        ] } 
+
+
+sim { //新版本
+        applicationId "新的应用包名"
+        resValue "string", "app_name", "新的应用名称"
+        manifestPlaceholders = 
+[app_icon     : "新的应用图标", package_name : applicationId, WEIBO_APPKEY : "微博APPKEY", JPUSH_PKGNAME: 接受推送的包名, JPUSH_APPKEY : "极光推送的APPKEY", //JPush上注册的包名对应的appkey.
+                                JPUSH_CHANNEL: "developer-default", //暂时填写默认值即可.
+        ] } }
+
