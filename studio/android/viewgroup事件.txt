@@ -1,0 +1,254 @@
+从源码的角度分析ViewGroup的事件分发。
+首先我们来探讨一下，什么是ViewGroup？
+它和普通的View有什么区别？
+ViewGroup就是一组View的集合，它包含很多的子View和子VewGroup，
+是Android中所有布局的父类或间接父类，像LinearLayout、RelativeLayout等都是继承自ViewGroup的。
+但ViewGroup实际上也是一个View，只不过比起View，它多了可以包含子View和定义布局参数的功能。
+
+首先我们来自定义一个布局，命名为MyLayout，继承自LinearLayout，如下所示：
+
+    public class MyLayout extends LinearLayout {
+     
+    	public MyLayout(Context context, AttributeSet attrs) {
+    		super(context, attrs);
+    	}
+     
+    }
+
+然后，打开主布局文件activity_main.xml，在其中加入我们自定义的布局：
+
+    <com.example.viewgrouptouchevent.MyLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/my_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical" >
+     
+        <Button
+            android:id="@+id/button1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Button1" />
+     
+        <Button
+            android:id="@+id/button2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Button2" />
+     
+    </com.example.viewgrouptouchevent.MyLayout>
+
+可以看到，我们在MyLayout中添加了两个按钮，接着在MainActivity中为这两个按钮和MyLayout都注册了监听事件：
+
+    myLayout.setOnTouchListener(new OnTouchListener() {
+    	@Override
+    	public boolean onTouch(View v, MotionEvent event) {
+    		Log.d("TAG", "myLayout on touch");
+    		return false;
+    	}
+    });
+    button1.setOnClickListener(new OnClickListener() {
+    	@Override
+    	public void onClick(View v) {
+    		Log.d("TAG", "You clicked button1");
+    	}
+    });
+    button2.setOnClickListener(new OnClickListener() {
+    	@Override
+    	public void onClick(View v) {
+    		Log.d("TAG", "You clicked button2");
+    	}
+    });
+
+分别点击一下Button1、Button2和空白区域
+当点击按钮的时候，MyLayout注册的onTouch方法并不会执行，只有点击空白区域的时候才会执行该方法。
+你可以先理解成Button的onClick方法将事件消费掉了，因此事件不会再继续向下传递。
+
+那就说明Android中的touch事件是先传递到View，再传递到ViewGroup的？
+
+查阅文档可以看到，ViewGroup中有一个onInterceptTouchEvent方法，我们来看一下这个方法的源码：
+
+    /**
+     * Implement this method to intercept all touch screen motion events.  This
+     * allows you to watch events as they are dispatched to your children, and
+     * take ownership of the current gesture at any point.
+     *
+     * <p>Using this function takes some care, as it has a fairly complicated
+     * interaction with {@link View#onTouchEvent(MotionEvent)
+     * View.onTouchEvent(MotionEvent)}, and using it requires implementing
+     * that method as well as this one in the correct way.  Events will be
+     * received in the following order:
+     *
+     * <ol>
+     * <li> You will receive the down event here.
+     * <li> The down event will be handled either by a child of this view
+     * group, or given to your own onTouchEvent() method to handle; this means
+     * you should implement onTouchEvent() to return true, so you will
+     * continue to see the rest of the gesture (instead of looking for
+     * a parent view to handle it).  Also, by returning true from
+     * onTouchEvent(), you will not receive any following
+     * events in onInterceptTouchEvent() and all touch processing must
+     * happen in onTouchEvent() like normal.
+     * <li> For as long as you return false from this function, each following
+     * event (up to and including the final up) will be delivered first here
+     * and then to the target's onTouchEvent().
+     * <li> If you return true from here, you will not receive any
+     * following events: the target view will receive the same event but
+     * with the action {@link MotionEvent#ACTION_CANCEL}, and all further
+     * events will be delivered to your onTouchEvent() method and no longer
+     * appear here.
+     * </ol>
+     *
+     * @param ev The motion event being dispatched down the hierarchy.
+     * @return Return true to steal motion events from the children and have
+     * them dispatched to this ViewGroup through onTouchEvent().
+     * The current target will receive an ACTION_CANCEL event, and no further
+     * messages will be delivered here.
+     */
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        return false;
+    }
+
+既然是布尔型的返回，那么只有两种可能，我们在MyLayout中重写这个方法，然后返回一个true试试，代码如下所示：
+
+    public class MyLayout extends LinearLayout {
+     
+    	public MyLayout(Context context, AttributeSet attrs) {
+    		super(context, attrs);
+    	}
+    	
+    	@Override
+    	public boolean onInterceptTouchEvent(MotionEvent ev) {
+    		return true;
+    	}
+    	
+    }
+
+你会发现，不管你点击哪里，永远都只会触发MyLayout的touch事件了，按钮的点击事件完全被屏蔽掉了！
+这是为什么呢？如果Android中的touch事件是先传递到View，再传递到ViewGroup的，那么MyLayout又怎么可能屏蔽掉Button的点击事件呢？
+
+不过这里我想先跟你透露一句，Android中touch事件的传递，绝对是先传递到ViewGroup，再传递到View的。
+只要你触摸了任何控件，就一定会调用该控件的dispatchTouchEvent方法。
+这个说法没错，只不过还不完整而已。
+
+实际情况是，当你点击了某个控件，首先会去调用该控件所在布局的dispatchTouchEvent方法，
+然后在布局的dispatchTouchEvent方法中找到被点击的相应控件，
+再去调用该控件的dispatchTouchEvent方法。
+
+如果我们点击了MyLayout中的按钮，会先去调用MyLayout的dispatchTouchEvent方法，
+可是你会发现MyLayout中并没有这个方法。
+那就再到它的父类LinearLayout中找一找，发现也没有这个方法。
+那只好继续再找LinearLayout的父类ViewGroup，你终于在ViewGroup中看到了这个方法，按钮的dispatchTouchEvent方法就是在这里调用的。
+
+那还等什么？快去看一看ViewGroup中的dispatchTouchEvent方法的源码吧！代码如下所示：
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        final int action = ev.getAction();
+        final float xf = ev.getX();
+        final float yf = ev.getY();
+        final float scrolledXFloat = xf + mScrollX;
+        final float scrolledYFloat = yf + mScrollY;
+        final Rect frame = mTempRect;
+        boolean disallowIntercept = (mGroupFlags & FLAG_DISALLOW_INTERCEPT) != 0;
+        if (action == MotionEvent.ACTION_DOWN) {
+            if (mMotionTarget != null) {
+                mMotionTarget = null;
+            }
+            if (disallowIntercept || !onInterceptTouchEvent(ev)) {
+                ev.setAction(MotionEvent.ACTION_DOWN);
+                final int scrolledXInt = (int) scrolledXFloat;
+                final int scrolledYInt = (int) scrolledYFloat;
+                final View[] children = mChildren;
+                final int count = mChildrenCount;
+                for (int i = count - 1; i >= 0; i--) {
+                    final View child = children[i];
+                    if ((child.mViewFlags & VISIBILITY_MASK) == VISIBLE
+                            || child.getAnimation() != null) {
+                        child.getHitRect(frame);
+                        if (frame.contains(scrolledXInt, scrolledYInt)) {
+                            final float xc = scrolledXFloat - child.mLeft;
+                            final float yc = scrolledYFloat - child.mTop;
+                            ev.setLocation(xc, yc);
+                            child.mPrivateFlags &= ~CANCEL_NEXT_UP_EVENT;
+                            if (child.dispatchTouchEvent(ev))  {
+                                mMotionTarget = child;
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        boolean isUpOrCancel = (action == MotionEvent.ACTION_UP) ||
+                (action == MotionEvent.ACTION_CANCEL);
+        if (isUpOrCancel) {
+            mGroupFlags &= ~FLAG_DISALLOW_INTERCEPT;
+        }
+        final View target = mMotionTarget;
+        if (target == null) {
+            ev.setLocation(xf, yf);
+            if ((mPrivateFlags & CANCEL_NEXT_UP_EVENT) != 0) {
+                ev.setAction(MotionEvent.ACTION_CANCEL);
+                mPrivateFlags &= ~CANCEL_NEXT_UP_EVENT;
+            }
+            return super.dispatchTouchEvent(ev);
+        }
+        if (!disallowIntercept && onInterceptTouchEvent(ev)) {
+            final float xc = scrolledXFloat - (float) target.mLeft;
+            final float yc = scrolledYFloat - (float) target.mTop;
+            mPrivateFlags &= ~CANCEL_NEXT_UP_EVENT;
+            ev.setAction(MotionEvent.ACTION_CANCEL);
+            ev.setLocation(xc, yc);
+            if (!target.dispatchTouchEvent(ev)) {
+            }
+            mMotionTarget = null;
+            return true;
+        }
+        if (isUpOrCancel) {
+            mMotionTarget = null;
+        }
+        final float xc = scrolledXFloat - (float) target.mLeft;
+        final float yc = scrolledYFloat - (float) target.mTop;
+        ev.setLocation(xc, yc);
+        if ((target.mPrivateFlags & CANCEL_NEXT_UP_EVENT) != 0) {
+            ev.setAction(MotionEvent.ACTION_CANCEL);
+            target.mPrivateFlags &= ~CANCEL_NEXT_UP_EVENT;
+            mMotionTarget = null;
+        }
+        return target.dispatchTouchEvent(ev);
+    }
+
+如果disallowIntercept和!onInterceptTouchEvent(ev)两者有一个为true，就会进入到这个条件判断中。
+disallowIntercept是指是否禁用掉事件拦截的功能，默认是false，
+也可以通过调用requestDisallowInterceptTouchEvent方法对这个值进行修改。
+那么当第一个值为false的时候就会完全依赖第二个值来决定是否可以进入到条件判断的内部，第二个值是什么呢？
+竟然就是对onInterceptTouchEvent方法的返回值取反！
+也就是说如果我们在onInterceptTouchEvent方法中返回false，就会让第二个值为true，从而进入到条件判断的内部，
+如果我们在onInterceptTouchEvent方法中返回true，就会让第二个值为false，从而跳出了这个条件判断。
+
+那我们重点来看下条件判断的内部是怎么实现的。在第19行通过一个for循环，遍历了当前ViewGroup下的所有子View，
+然后在第24行判断当前遍历的View是不是正在点击的View，如果是的话就会进入到该条件判断的内部，然后在第29行调用了该View的dispatchTouchEvent，
+之后的流程就和 Android事件分发机制完全解析，带你从源码的角度彻底理解(上) 中讲解的是一样的了。
+我们也因此证实了，按钮点击事件的处理确实就是在这里进行的。
+
+
+然后需要注意一下，调用子View的dispatchTouchEvent后是有返回值的。我们已经知道，如果一个控件是可点击的，那么点击该控件时，
+dispatchTouchEvent的返回值必定是true。因此会导致第29行的条件判断成立，于是在第31行给ViewGroup的dispatchTouchEvent方法直接返回了true。
+这样就导致后面的代码无法执行到了，也是印证了我们前面的Demo打印的结果，
+如果按钮的点击事件得到执行，就会把MyLayout的touch事件拦截掉。
+
+
+那如果我们点击的不是按钮，而是空白区域呢？这种情况就一定不会在第31行返回true了，而是会继续执行后面的代码。
+那我们继续往后看，在第44行，如果target等于null，就会进入到该条件判断内部，这里一般情况下target都会是null，因此会在第50行调用super.dispatchTouchEvent(ev)。
+这句代码会调用到哪里呢？
+当然是View中的dispatchTouchEvent方法了，因为ViewGroup的父类就是View。之后的处理逻辑又和前面所说的是一样的了，
+也因此MyLayout中注册的onTouch方法会得到执行。之后的代码在一般情况下是走不到的了，我们也就不再继续往下分析。
+
+
+现在整个ViewGroup的事件分发流程的分析也就到此结束了，我们最后再来简单梳理一下吧。
+1. Android事件分发是先传递到ViewGroup，再由ViewGroup传递到View的。
+
+2. 在ViewGroup中可以通过onInterceptTouchEvent方法对事件传递进行拦截，
+onInterceptTouchEvent方法返回true代表不允许事件继续向子View传递，
+返回false代表不对事件进行拦截，默认返回false。
+
+3. 子View中如果将传递的事件消费掉，ViewGroup中将无法接收到任何事件。
