@@ -1,0 +1,16 @@
+
+standard：	标准模式
+singleTop：	栈顶复用模式
+singleTask：	栈内单例模式
+singleInstance  堆内单例
+taskAffinity
+Task
+excludeFromRecents
+noHistory
+component(组件)、action、category、data、type、extras、flags
+onSaveInstanceState 和
+onRestoreInstanceState
+zygote
+Thread
+ApplicationThreadProxy，
+attach

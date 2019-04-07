@@ -1,0 +1,173 @@
+一、Activity四种启动模式：
+(一)、基本描述
+    standard：标准模式：如果在mainfest中不设置就是默认standard；
+    standard就是新建一个Activity~就在栈中新建一个activity实例；（~~~不配置mainfest~默认标准模式，启动一次就会往栈中添加一个实例）
+    
+    singleTop：栈顶复用模式：
+    与standard相比栈顶复用可以~有效减少activity重复创建对资源的消耗。但是这要根据具体情况而定，不能一概而论；（~~~如果栈中存在实例就会复用该实例）
+
+    singleTask：栈内单例模式，
+    栈内只有一个activity实例，栈内已存activity实例，在其他activity中start这个activity，
+    Android直接把这个实例上面其他activity实例踢出栈GC掉；（~~~如果栈中存在实例就会复用该实例，并把实例上面的实例移除）
+
+    singleInstance :堆内单例：整个手机操作系统里面只有一个实例存在就是内存单例；（~~~堆内只存在一个实例）
+
+        在singleTop、singleTask、singleInstance 中如果在应用内存在Activity实例，
+	并且再次发生startActivity(Intent intent)回到Activity后,
+	由于并不是重新创建Activity而是复用栈中的实例，
+	因此Activity再获取焦点后并没调用onCreate、onStart，而是直接调用了onNewIntent(Intent intent)函数；
+
+(二)、taskAffinity属性
+taskAffinity是Activity在mainfest中配置的一个属性，暂时可以理解为：
+taskAffinity为宿主Activity~~指定了存放的任务栈[不同于App中其他的Activity的栈]，
+为activity设置taskAffinity属性时~~不能和包名相同，因为Android团队为taskAffinity默认设置为~~包名任务栈。
+
+taskAffinity只有和SingleTask启动模式匹配使用时，启动的Activity才会运行在名字和taskAffinity相同的任务栈中。
+
+
+(三)、Intent中标志位设置启动模式
+Intent.setFlags(int flags)设置启动模式；
+
+    FLAG_ACTIVITY_CLEAR_TOP : 等同于mainfest中配置的singleTask；
+
+    FLAG_ACTIVITY_SINGLE_TOP: 同样等同于mainfest中配置的singleTop;
+
+    FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS: 其对应在AndroidManifest中的属性为android:excludeFromRecents=“true”,
+    当用户按了“最近任务列表”时候,该Task不会出现在最近任务列表中，可达到隐藏应用的目的。
+
+    FLAG_ACTIVITY_NO_HISTORY: 
+    对应在AndroidManifest中的属性为:android:noHistory=“true”，这个FLAG启动的Activity，一旦退出，它不会存在于栈中。
+
+    FLAG_ACTIVITY_NEW_TASK: 这个属性需要在被start的目标Activity在AndroidManifest.xml文件配置taskAffinity的值
+    【必须和startActivity发其者Activity的包名不一样，如果是跳转另一个App的话可以taskAffinity可以省略】，
+    则会在新标记的Affinity所存在的taskAffinity中压入这个Activity。
+
+        个人认为在上述Flag中FLAG_ACTIVITY_NEW_TASK是最为重要的一个flag，（~~~被启动的activity存放在新标记的Affinity所存在的栈中）
+        1.在Service中启动Activity；
+        2.App为系统Launcher时，跳转到微信无法退出时用到；
+
+(四)、startActivity场景
+    目标Activity是本应用中的Activity，即它的启动模式是可以直接在fanifest中配置或者默认为standard，任务栈也可以自己随意设置；
+    目标Activity是第三方App中的Activity，这个时候就需要先考虑打开新Activity的是和自己App放在同一任务栈中还是新的task中
+    【这个是很重要的因为在Android的机制中：
+    同一个任务栈中的activity的生命周期是和这个task相关联的】，
+    然后考虑Activity的启动模式； 所以Android提供了优先级更高的设置方式在Intent.setFlags(int flags),通过这setFlags就可以为打开第三方的App中Activity设置任务栈和启动模式了，具体设置就自己去看源码了。
+
+
+二、Activity四种启动模式常见使用场景：
+LauchMode 	Instance
+
+standard 	邮件、mainfest中没有配置就默认标准模式
+singleTop 	登录页面、WXPayEntryActivity、WXEntryActivity 、推送通知栏
+singleTask 	程序模块逻辑入口:主页面（Fragment的containerActivity）、WebView页面、扫一扫页面、电商中：购物界面，确认订单界面，付款界面
+singleInstance 	系统Launcher、锁屏键、来电显示等系统应用
+
+三、启动模式在实际开发中小插曲
+而且是App是作为LAUNCHER启动的，并且在App的一个功能就是点击直接跳转到微信登录LauncherUI页[如果有登录会自动到聊天页面]的，这个听起也是很普通的一个功能。
+(一)、问题复现：
+
+开机后App作为launcher启动，然后打开微信LauncherUI加载页【未登录微信】到微信登录页，然后点返回键【系统返回键】不能也退出微信返回到原来我们的launcher的App中去了，
+然后Android大法在底部导航栏中查看系统任务【有那些应用在后台】，结果显示一个也没有；这样就是一时间尴尬了退不出微信了；
+(二)、问题定位：
+
+1.点击返回键【系统返回键】微信页面没有退出：微信的登录页面Activity拦截了返回键 KeyEvent.KEYCODE_BACK 事件【只是将应用隐藏在后台不退出，然后回到桌面】，所以登录Activity没有销毁；
+2.系统导航栏查看正在运行的应用为空，实际上是正在运行我们的App[launcher而且放在在system/app下]和微信的，两个问题缘由：
+
+    我们的App作为launcher被Android作为系统应用任务栈了所以没有显示；
+    微信是在launcherApp中打开的而且打开代码是并没有设置微信LauncherUI的启动模式和任务栈，
+    Android默认是在同一个任务栈中了，所以在查看任务栈时看不到微信应用，而且由于App是launcher作为系统任务就显示没有应用程序了；
+
+(三)、解决办法
+
+我们的期望是即使不登录微信同样点返回键就可以直接返回到我们App的页面中；
+根据已经点位到问题进行解决一个基本思路是：用户点返回键后杀死微信的Activity，回到我们App页面中；
+具体代码就是
+
+//修改之前
+ Intent intent = new Intent();
+ intent.setClassName("com.tencent.mm", "com.tencent.mm.ui.LauncherUI");
+ context.startActivity(intent);
+//修改之后是这样的
+ Intent intent = new Intent();
+ intent.setClassName("com.tencent.mm", "com.tencent.mm.ui.LauncherUI");
+ intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+ context.startActivity(intent);
+
+
+其实代码中只是设置新打开微信在新的任务栈中，这样就是及时在微信LauncherUI的页面中拦截了返回键【只是将应用隐藏在后台不退出然后回到桌面】，
+这样我们App最为launcher，所以就回到我们App了。同样这样在在导航栏中查看真正运行任务就可以看到微信了；
+
+(四) 、新的问题
+
+在添加上Intent.FLAG_ACTIVITY_NEW_TASK之后是需要新建一个任务栈打开App的，虽然是解决了不能返回的问题，但是也引发新的问题：
+
+ intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+1.用户点返回键后微信并没有退出：
+在界面上看到是回到桌面App中了，其实微信并没有退出任然在后台运行；
+这个问题其实普遍存在，而且开发者基本上都是对用户采取理性欺骗【或者隐瞒】，现实中用户也是都已经接受；
+
+2.点击跳转到微信明显卡顿：以前打开新的App是在一个任务栈中的，打开新App页面和在同一App页面跳转感觉基本上是一瞬间的，
+用户感觉不到是在App之间跳转的，设置Intent.FLAG_ACTIVITY_NEW_TASK之后是需要新建一个任务栈打开App的，点击后有明显的停顿【CPU越差劲越明显】用户体验明显变差了。
+
+
+
+其它问题：
+(一) 、Intent的基本应用
+
+在Android中Intent是在四大组件之间进行交互与通讯，也可以在应用之间通讯。
+其底层的通信是以Binder机制实现的，在物理层则是通过共享内存的方式实现的。
+1.Intent属性
+
+Intent的属性有：component(组件)、action、category、data、type、extras、flags；所有的属性也是各显神通，满足开发者的各种需要满足不同场景；
+component: 显然就是设置四大组件的，将直接使用它指定的组件，借助这一属性可以实现不同应用组件之间通讯；
+action： 是一个可以指定目标组件行为的字符串，开发人员可以自定义action通过匹配action实现组件之间的隐士跳转，当然Android系统也已经预定部分String作为系统应用Action，例如打开系统设置页面等等；
+data： 通常是URI类型或者MIME类型格式定义的操作数据；表示与动作要操纵的数据
+
+        data中长见的MIME类型数据；
+        tel://：号码数据格式，后跟电话号码。　
+        mailto://：邮件数据格式，后跟邮件收件人地址。
+        smsto://：短息数据格式，后跟短信接收号码。
+        content://：内容数据格式，后跟需要读取的内容。　
+        file://：文件数据格式，后跟文件路径。
+        market://search?q=pname:pkgname：市场数据格式，在Google Market里搜
+        data中URI
+        data元素组成的URI模型：scheme://host:port/path 例如：file://com.android.jony.test:520/mnt/sdcard；
+
+Category： 属性用于指定当前动作（Action）被执行的环境；
+type： 对于data范例的描写；
+extras和flags 这两个太熟悉了就不在重复；
+2.Intent的隐士与显示
+
+(二) 、Activity异常生命周期与应用
+
+这个过程中几个核心的函数和参数是：Bundle[onCreate(Bundle savedInstanceState)]，onSaveInstanceState(Bundle outState)、onRestoreInstanceState(Bundle savedInstanceState)；
+1.系统配置改变引起异常；
+
+这里的系统配置改变是指由于横竖屏切换等引起的Activity生命周期的变化，进而引发的资源的变化。
+在Android中系统配置改变是会引起Activity销毁重建的，例如横竖屏切换，只是切换时间差太小，用户眼睛不能察觉而已。
+activity重建的时候就在之前Activity销毁前，系统会先调用onSaveInstanceState(Bundle outState)存储当时各种状态，
+在新建Activity中Android会通过onRestoreInstanceState(Bundle savedInstanceState)读取数据并自动恢复到之前Activity的View，
+当然在Activity中开发者自己的代码逻辑就需要自己处理啦。
+        触发onSaveInstanceState(Bundle outState)的条件：
+        1、当用户按下HOME键时。
+        2、从最近应用中选择运行其他的程序时。
+        3、按下电源按键（关闭屏幕显示）时。
+        4、从当前activity启动一个新的activity时。
+        5、屏幕方向切换时(无论竖屏切横屏还是横屏切竖屏都会调用)。
+        在前4种情况下，当前activity的生命周期为：
+        onPause -> onSaveInstanceState -> onStop。
+
+2.系统回收引起异常
+
+在Android系统内存不足时，同时Activity失去焦点后被系统给回收后，Activity 再次被创建时，
+通过onSaveInstanceState 和onRestoreInstanceState来存储恢复数据再次显示在屏幕上之前的View等状态；
+3.Activity异常基础处理
+
+1.最常见的是在onCreate(Bundle savedInstanceState)中通判断savedInstanceState是否为空，恢复Activity中的数据体；
+2.另一种就是根据应用场景在mainfest中配置各种参数尽可能减少由于配置参数引起的Activity异常；
+3.使用onConfigurationChanged方法代替onRestoreInstanceState实现恢复数据逻辑，更高级的自然就是性能优化、实时监视的思路啦；
+
+
+
+onConfigurationChanged()屏幕切换执行条件  api <13 不需要配置screenSize
+android:configChanges="orientation|screenSize"
