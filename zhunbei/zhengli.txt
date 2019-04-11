@@ -1,0 +1,272 @@
+1 4-7
+Handler 相关知识，面试必问！
+常问的点：
+Handler Looper Message 关系是什么？
+Messagequeue 的数据结构是什么？为什么要用这个数据结构？
+如何在子线程中创建 Handler?
+Handler post 方法原理？
+Android消息机制的原理及源码解析 源码角度完整解析
+Handler 都没搞懂，拿什么去跳槽啊？
+Android Handler 消息机制（解惑篇）
+Android 消息机制 郭神的文章
+
+
+2
+Activity 相关
+启动模式以及使用场景?
+onNewIntent()和onConfigurationChanged()
+onSaveInstanceState()和onRestoreInstanceState()
+Activity 到底是如何启动的
+启动模式以及使用场景
+详细的解释场景并且以及一些坑
+onSaveInstanceState以及onRestoreInstanceState使用 简单通透
+onConfigurationChanged使用以及问题解决 全面得描述了各种情况
+Activity 启动流程解析
+
+
+3
+Fragment
+Fragment 生命周期和 Activity 对比
+Fragment 之间如何进行通信
+Fragment的startActivityForResult
+Fragment重叠问题
+Fragment 初探
+Fragment 重叠， 如何通信
+Fragment生命周期
+
+
+4
+Service 相关
+进程保活
+Service的运行线程（生命周期方法全部在主线程）
+Service启动方式以及如何停止
+ServiceConnection里面的回调方法运行在哪个线程？
+startService 和 bingService区别 完整讲解了它们之间得区别
+进程保活一般套路 把进程保活手段都讲了一遍
+关于进程保活你需要知道的一切 10万+ 关于进程保活得文章
+
+
+
+5
+Android布局优化之ViewStub、include、merge
+什么情况下使用 ViewStub、include、merge？
+他们的原理是什么？
+ViewStub、include、merge概念解析
+Android布局优化之ViewStub、include、merge使用与源码分析
+
+
+6
+BroadcastReceiver 相关
+注册方式，优先级
+广播类型，区别
+广播的使用场景，原理
+Android广播动态静态注册 通俗易懂
+常见使用以及流程解析
+广播源码解析
+
+
+
+7
+AsyncTask相关
+AsyncTask是串行还是并行执行？
+AsyncTask随着安卓版本的变迁
+AsyncTask完全解析 郭神的文章 一篇足够 从使用到源码
+串行还是并行
+
+
+
+
+8
+Android 事件分发机制
+onTouch和onTouchEvent区别，调用顺序
+dispatchTouchEvent， onTouchEvent， onInterceptTouchEvent 方法顺序以及使用场景
+滑动冲突，如何解决
+事件分发机制 郭神出品
+事件分发解析 鸿洋出品
+dispatchTouchEvent， onTouchEvent，
+onInterceptTouchEvent方法的使用场景解析
+
+
+
+
+
+9
+Android View 绘制流程
+简述 View 绘制流程
+onMeasure， onlayout， ondraw方法中需要注意的点
+如何进行自定义 View
+view 重绘机制
+Android LayoutInflater原理分析，带你一步步深入了解View(一)
+Android视图状态及重绘流程分析，带你一步步深入了解View(二)
+Android视图状态及重绘流程分析，带你一步步深入了解View(三)
+Android自定义View的实现方法，带你一步步深入了解View(四)
+
+
+
+10
+Android Window、Activity、DecorView以及ViewRoot
+Window、Activity、DecorView以及ViewRoot之间的关系
+
+
+
+11
+Android 的核心 Binder 多进程 AIDL
+常见的 IPC 机制以及使用场景
+为什么安卓要用 binder 进行跨进程传输
+多进程带来的问题
+AIDL 使用浅析
+binder 原理解析 真的不错
+binder 最底层解析 很难理解，我看了几遍还是了解一个大概
+多进程通信方式以及带来的问题
+多进程通信方式对比
+
+
+
+
+12
+Android 高级必备 ：AMS,WMS,PMS
+这部分真的复杂！
+AMS,WMS,PMS 创建过程
+AMS,WMS,PMS全解析
+AMS启动流程
+WindowManagerService启动过程解析
+PMS 启动流程解析
+
+
+
+13
+Android ANR
+为什么会发生 ANR？
+如何定位 ANR？
+如何避免 ANR？
+什么是 ANR
+如何避免以及分析方法
+Android 性能优化之 ANR 详解
+
+
+
+14
+Android 内存相关
+注意：内存泄漏和内存溢出是 2 个概念
+什么情况下会内存泄漏？
+如何防止内存泄漏？
+内存泄漏和溢出的区别
+OOM 概念以及安卓内存管理机制
+内存泄漏的可能性
+防止内存泄漏的方法
+
+
+
+15
+Android 屏幕适配
+屏幕适配相关名词解析
+现在流行的屏幕适配方式
+屏幕适配名词以及概念解析
+今日头条技术适配方案
+
+
+
+
+16
+Android 缓存机制
+LruCache使用极其原理
+Android缓存机制
+LruCache使用极其原理述
+Android 性能优化
+如何进行 内存 cpu 耗电 的定位以及优化
+
+
+17
+性能优化经常使用的方法
+如何避免 UI 卡顿
+我正在看极客时间的Android开发高手课，里面的性能优化文章不错
+性能优化全解析，工具使用
+性能优化最佳实践
+知乎高赞文章
+
+
+18
+Android MVC、MVP、MVVM
+好几种我该选择哪个？优劣点
+任玉刚的文章：
+设计模式选择
+
+
+19
+Android Gradle 知识
+这俩篇官方文章基础的够用了
+必须贴一下官方文档：配置构建
+Gradle 提示与诀窍
+Gradle插件 了解就好
+Gradle 自定义插件方式
+全面理解Gradle - 执行时序
+Gradle系列一
+Gradle系列二
+Gradle系列三
+
+
+20
+RxJava
+使用过程，特点，原理解析
+RxJava 名词以及如何使用
+Rxjava 观察者模式原理解析
+Rxjava订阅流程，线程切换，源码分析 系列
+OKHTTP 和 Retrofit
+OKHTTP完整解析 --鸿洋出品
+Retrofit使用流程，机制详解
+从 HTTP 到 Retrofit
+Retrofit是如何工作的
+
+
+
+21
+最流行图片加载库： Glide
+郭神系列 Glide 分析
+Android图片加载框架最全解析（一），Glide的基本用法
+Android图片加载框架最全解析（二），从源码的角度理解Glide的执行流程
+Android图片加载框架最全解析（三），深入探究Glide的缓存机制
+Android图片加载框架最全解析（四），玩转Glide的回调与监听
+Android图片加载框架最全解析（五），Glide强大的图片变换功能
+Android图片加载框架最全解析（六），探究Glide的自定义模块功能
+Android图片加载框架最全解析（七），实现带进度的Glide图片加载功能
+Android图片加载框架最全解析（八），带你全面了解Glide 4的用法
+
+
+
+
+22
+Android 组件化与插件化
+业务大了代码多了会用到。
+为什么要用组件化？
+组件之间如何通信？
+组件之间如何跳转？
+Android 插件化和热修复知识梳理
+为什么要用组件化
+1、Android彻底组件化方案实践
+2、Android彻底组件化demo发布
+3、Android彻底组件化-代码和资源隔离
+4、Android彻底组件化—UI跳转升级改造
+5、Android彻底组件化—如何使用Arouter
+插件化框架历史
+深入理解Android插件化技术 阿里插件化技术
+Android 插件化和热修复知识梳理
+
+
+
+
+23（5-6到7）
+你在项目中遇到最难得点是什么？如何解决的？
+平时遇到问题了是如何解决的？比较好的回答：
+官方文档一定要看，通过源码解决问题，然后才是搜索引擎以及和同事讨论
+你最近做的 APP 是如何架构的？为什么要这样架构？
+平时怎么进行技术进阶，如何学习？
+你觉得自己处于什么技术水平？
+你的技术优势是什么？
+
+
+最后给大家分享一份非常系统和全面的Android进阶技术大纲及进阶资料，及面试题集
+想学习更多Android知识，请加入Android技术开发企鹅交流 7520 16839
+进群与大牛们一起讨论，
+还可获取Android高级架构资料、源码、笔记、视频
+包括 高级UI、Gradle、RxJava、小程序、Hybrid、移动架构、React Native、性能优化等
+全面的Android高级实践技术讲解性能优化架构思维导图，和BATJ面试题及答案！

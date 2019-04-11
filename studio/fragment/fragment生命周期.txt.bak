@@ -1,0 +1,84 @@
+
+1
+    onAttach(Context context)：
+    在Fragment和Activity关联上的时候调用，且仅调用一次。
+    在该回调中我们可以将context转化为Activity保存下来，
+    从而避免后期频繁调用getAtivity()获取Activity的局面，
+    避免了在某些情况下getAtivity()为空的异常（Activity和Fragment分离的情况下）。
+    同时也可以在该回调中将传入的Arguments提取并解析，在这里强烈推荐通过setArguments给Fragment传参数，
+    因为在应用被系统回收时Fragment不会保存相关属性，具体之后会讲解。
+
+    onCreate：在最初创建Fragment的时候会调用，和Activity的onCreate类似。
+
+    View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)：
+    在准备绘制Fragment界面时调用，返回值为Fragment要绘制布局的根视图，
+    当然也可以返回null。注意使用inflater构建View时一定要将attachToRoot指明false，
+    因为Fragment会自动将视图添加到container中，attachToRoot为true会重复添加报错。
+    onCreateView并不是一定会被调用，当添加的是没有界面的Fragment就不会调用，
+    比如调用FragmentTransaction的 add(Fragment fragment, String tag)方法。
+
+    onActivityCreated ：在Activity的onCreated执行完时会调用。
+
+    onStart() ：Fragment对用户可见的时候调用，前提是Activity已经started。
+
+    onResume()：Fragment和用户之前可交互时会调用，前提是Activity已经resumed。
+
+    onPause()：Fragment和用户之前不可交互时会调用。
+
+    onStop()：Fragment不可见时会调用。
+
+    onDestroyView()：在移除Fragment相关视图层级时调用。
+
+    onDestroy()：最终清楚Fragment状态时会调用。
+
+    onDetach()：Fragment和Activity解除关联时调用。
+
+
+2
+
+Fragment每个生命周期方法的意义、作用（注意红色的不是生命周期方法）：
+setUserVisibleHint()：
+设置Fragment可见或者不可见时会调用此方法。
+在该方法里面可以通过调用getUserVisibleHint()获得Fragment的状态是可见还是不可见的，如果可见则进行懒加载操作。
+
+onAttach()：执行该方法时，Fragment与Activity已经完成绑定，
+该方法有一个Activity类型的参数，代表绑定的Activity，这时候你可以执行诸如mActivity = activity的操作。
+
+onCreate()：初始化Fragment。可通过参数savedInstanceState获取之前保存的值。
+
+onCreateView()：初始化Fragment的布局。
+加载布局和findViewById的操作通常在此函数内完成，但是不建议执行耗时的操作，比如读取数据库数据列表。
+
+onActivityCreated()：执行该方法时，与Fragment绑定的Activity的onCreate方法已经执行完成并返回，
+在该方法内可以进行与Activity交互的UI操作，所以在该方法之前Activity的onCreate方法并未执行完成，
+如果提前进行交互操作，会引发空指针异常。
+
+onStart()：执行该方法时，Fragment由不可见变为可见状态。
+
+onResume()：执行该方法时，Fragment处于活动状态，用户可与之交互。
+
+onPause()：执行该方法时，Fragment处于暂停状态，但依然可见，用户不能与之交互。
+
+onSaveInstanceState()：保存当前Fragment的状态。该方法会自动保存Fragment的状态，
+比如EditText键入的文本，即使Fragment被回收又重新创建，一样能恢复EditText之前键入的文本。
+
+onStop()：执行该方法时，Fragment完全不可见。
+
+onDestroyView()：销毁与Fragment有关的视图，但未与Activity解除绑定，依然可以通过onCreateView方法重新创建视图。通常在ViewPager+Fragment的方式下会调用此方法。
+
+onDestroy()：销毁Fragment。通常按Back键退出或者Fragment被回收时调用此方法。
+
+onDetach()：解除与Activity的绑定。在onDestroy方法之后调用。
+
+
+
+
+Fragment生命周期执行流程（注意红色的不是生命周期方法）：
+Fragment创建：setUserVisibleHint()->onAttach()->onCreate()->onCreateView()->onActivityCreated()->onStart()->onResume()；
+Fragment变为不可见状态（锁屏、回到桌面、被Activity完全覆盖）：onPause()->onSaveInstanceState()->onStop()；
+Fragment变为部分可见状态（打开Dialog样式的Activity）：onPause()->onSaveInstanceState()；
+Fragment由不可见变为活动状态：onStart()->OnResume()；
+Fragment由部分可见变为活动状态：onResume()；
+退出应用：onPause()->onStop()->onDestroyView()->onDestroy()->onDetach()（注意退出不会调用onSaveInstanceState方法，因为是人为退出，没有必要再保存数据）；
+Fragment被回收又重新创建：被回收执行onPause()->onSaveInstanceState()->onStop()->onDestroyView()->onDestroy()->onDetach()，重新创建执行onAttach()->onCreate()->onCreateView()->onActivityCreated()->onStart()->onResume()->setUserVisibleHint()；
+横竖屏切换：与Fragment被回收又重新创建一样。

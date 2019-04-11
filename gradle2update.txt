@@ -1,0 +1,33 @@
+gradle升级改动：
+0.gradle插件 版本2.3.3 旧版本升级到3.2.0：
+1.compile 改为 api
+2.mBuildToolsVersion=25.0.3 改为 mBuildToolsVersion=28.0.2
+3.加入google()依赖 
+4.gradle版本 2.14.1 到4.6
+6.注释     debugCompile project(path: 'CordovaLib', configuration: 'debug')
+    releaseCompile project(path: 'CordovaLib', configuration: 'release')
+    加入： api project(':CordovaLib')
+7.清单文件：注释    <uses-sdk
+        android:minSdkVersion="19"
+        android:targetSdkVersion="25" />
+8.加入 flavorDimensions "versionCode"
+9.加入 minSdkVersion mMinSdkVersion.toInteger()
+具体开git提交 develop320分支：升级gradle版本  清理配置文件  两次提交
+
+
+
+gradle升级改动：
+0.gradle插件 版本3.2.0 旧版本升级到3.3.0：
+1.gradle版本 4.6 到 4.10.1
+2.注释
+//ext {
+//    apply from: 'cordova.gradle'
+//    cdvCompileSdkVersion = privateHelpers.getProjectTarget()
+//    cdvBuildToolsVersion = privateHelpers.findLatestInstalledBuildTools()
+//}
+3.删除cordova.gradle文件
+4.mBuildToolsVersion=28.0.2 改为 mBuildToolsVersion=28.0.3
+5.注释//    apply from: 'CordovaLib/cordova.gradle'
+6.将cordova.gradle配置移动到工程里面
+具体开git提交 develop330分支：as升级
+

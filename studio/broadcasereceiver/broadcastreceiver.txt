@@ -1,0 +1,379 @@
+BroadcastReceiver 
+定义
+
+BroadcastReceiver，“广播接收者”
+用来接收来自 系统和应用中 的广播。
+
+在Android系统中，广播体现在方方面面，
+例如当开机完成后系统会产生一条广播，接收到这条广播就能实现开机启动服务的功能；
+当网络状态改变时系统会产生一条广播，接收到这条广播就能及时地做出提示和保存数据等操作；
+当电池电量改变时，系统会产生一条广播，接收到这条广播就能在电量低时告知用户及时保存进度等等。
+Android中的广播机制设计的非常出色，很多事情原本需要开发者亲自操作的，现在只需等待广播告知自己就可以了，大大减少了开发的工作量和开发周期。
+
+分析的大纲：
+（1）对静态和动态两种注册方式进行概念阐述以及演示实现步骤
+（2）简述两种BroadcastReceiver的类型（为后续注册方式的对比做准备）
+（3）在默认广播类型下设置优先级和无优先级情况下两种注册方式的比较
+（4）在有序广播类型下两种注册方式的比较
+（5）通过接受打电话的广播，在程序（Activity）运行时和终止运行时，对两种注册方式的比较
+（6）总结两种方式的特点
+
+一、静态和动态注册方式
+构建Intent，使用sendBroadcast方法发出action，
+广播接收器继承BroadcastReceiver，
+并且覆盖onReceive()方法来响应事件注册该广播接收器，
+我们可以在代码中注册（动态注册），
+也可以AndroidManifest.xml配置文件中注册（静态注册）。
+
+  import android.content.BroadcastReceiver;  
+    import android.content.Context;  
+    import android.content.Intent;  
+    import android.content.IntentFilter;  
+    import android.support.v7.app.AppCompatActivity;  
+    import android.os.Bundle;  
+    import android.view.Gravity;  
+    import android.view.View;  
+    import android.widget.Toast;  
+      
+    public class MainActivity extends AppCompatActivity {  
+        DynamicReceiver dynamicReceiver;  
+        @Override  
+        protected void onCreate(Bundle savedInstanceState) {  
+            super.onCreate(savedInstanceState);  
+            setContentView(R.layout.activity_main);  
+            //实例化IntentFilter对象  
+            IntentFilter filter = new IntentFilter();  
+            filter.addAction("panhouye");  
+            dynamicReceiver = new DynamicReceiver();  
+            //注册广播接收  
+            registerReceiver(dynamicReceiver,filter);  
+        }  
+        //按钮点击事件  
+        public void send2(View v){  
+            Intent intent = new Intent();  
+            intent.setAction("panhouye");  
+            intent.putExtra("sele","潘侯爷");  
+            sendBroadcast(intent);  
+        }  
+        /*动态注册需在Acticity生命周期onPause通过 
+         *unregisterReceiver()方法移除广播接收器， 
+         * 优化内存空间，避免内存溢出 
+         */  
+        @Override  
+        protected void onPause() {  
+            super.onPause();  
+            unregisterReceiver(new MyReceiver());  
+        }  
+        //通过继承 BroadcastReceiver建立动态广播接收器  
+        class DynamicReceiver extends BroadcastReceiver{  
+            @Override  
+            public void onReceive(Context context, Intent intent) {  
+                //通过土司验证接收到广播  
+                Toast t = Toast.makeText(context,"动态广播："+ intent.getStringExtra("sele"), Toast.LENGTH_SHORT);  
+                t.setGravity(Gravity.TOP,0,0);//方便录屏，将土司设置在屏幕顶端  
+                t.show();  
+            }  
+        }  
+    }  
+静态注册：
+    import android.content.BroadcastReceiver;  
+    import android.content.Context;  
+    import android.content.Intent;  
+    import android.view.Gravity;  
+    import android.widget.Toast;  
+      
+    public class MyReceiver extends BroadcastReceiver {  
+        public MyReceiver() {  
+        }  
+        @Override  
+        public void onReceive(Context context, Intent intent) {  
+            Toast t = Toast.makeText(context,"静态广播："+intent.getStringExtra("info"), Toast.LENGTH_SHORT);  
+            t.setGravity(Gravity.TOP,0,0);  
+            t.show();  
+        }  
+    }  
+
+修改AndroidMainfest.xml配置文件中的代码：
+    <?xml version="1.0" encoding="utf-8"?>  
+    <manifest xmlns:android="http://schemas.android.com/apk/res/android"  
+        package="com.example.administrator.day19">  
+    <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS"/>  
+        <application  
+            android:allowBackup="true"  
+            android:icon="@mipmap/ic_launcher"  
+            android:label="@string/app_name"  
+            android:supportsRtl="true"  
+            android:theme="@style/AppTheme">  
+            <activity android:name=".MainActivity">  
+                <intent-filter>  
+                    <action android:name="android.intent.action.MAIN" />  
+      
+                    <category android:name="android.intent.category.LAUNCHER" />  
+                </intent-filter>  
+            </activity>  
+            //生成的receiver配置文件  
+            <receiver  
+                android:name=".MyReceiver"  
+                android:enabled="true"  
+                android:exported="true">  
+                <intent-filter>  
+                //自定义Action  
+                    <action android:name="MLY" />  
+                </intent-filter>  
+            </receiver>  
+        </application>  
+    </manifest>  
+
+
+最后在MainActivity.java文件中添加按钮点击事件，如下：
+    import android.content.BroadcastReceiver;  
+    import android.content.Context;  
+    import android.content.Intent;  
+    import android.content.IntentFilter;  
+    import android.support.v7.app.AppCompatActivity;  
+    import android.os.Bundle;  
+    import android.view.Gravity;  
+    import android.view.View;  
+    import android.widget.Toast;  
+      
+    public class MainActivity extends AppCompatActivity {  
+        DynamicReceiver dynamicReceiver;  
+        @Override  
+        protected void onCreate(Bundle savedInstanceState) {  
+            super.onCreate(savedInstanceState);  
+            setContentView(R.layout.activity_main);  
+        }  
+        //静态广播点击  
+        public void send(View v){  
+            Intent intent = new Intent();  
+            intent.setAction("MLY");  
+            intent.putExtra("info","panhouye");  
+            sendBroadcast(intent);  
+        }  
+    }  
+
+二、插入BroadcastReceiver的两种常用类型
+
+ 
+
+（1）Normalbroadcasts：默认广播
+Context.sendBroadcast(）对于多个接收者来说是完全异步的，通常每个接收者都无需等待即可以接收到广播，接收者相互之间不会有影响。
+	 对于这种广播，接收者无法终止广播，即无法阻止其他接收者的接收动作。
+
+（2）orderedbroadcasts：有序广播
+Context.sendorderedBroadcast(），有序广播比较特殊，它每次只发送到优先级较高的接收者那里，
+然后由优先级高的接受者再传播到优先级低的接收者那里，优先级高的接收者有能力终止这个广播。
+
+在注册广播中的<intent-filter>中使用android:priority属性。
+这个属性的范围在-1000到1000，数值越大，优先级越高。
+在广播接收器中使用setResultExtras方法将一个Bundle对象设置为结果集对象，传递到下一个接收者那里，
+这样优先级低的接收者可以用getResuttExtras获取到最新的经过处理的信息集合。
+使用sendorderedBroadcast方法发送有序广播时，需要一个权限参数，
+如果为null则表示不要求接收者声明指定的权限，如果不为null则表示接收者若要接收此广播，需声明指定权限。
+这样做是从安全角度考虑的，例如系统的短信就是有序广播的形式，一个应用可能是具有拦截垃圾短信的功能，
+当短信到来时它可以先接受到短信广播，必要时终止广播传递，这样的软件就必须声明接收短信的权限。
+
+
+三、默认广播下两种注册方式的比较
+（1）两种注册方式均不设置优先级
+这里将动态与静态两种注册的广播触发集中在一个按钮上，显示效果如下（未设置优先级的情况下，先动态后静态）：
+    import android.content.BroadcastReceiver;  
+    import android.content.Context;  
+    import android.content.Intent;  
+    import android.content.IntentFilter;  
+    import android.support.v7.app.AppCompatActivity;  
+    import android.os.Bundle;  
+    import android.view.Gravity;  
+    import android.view.View;  
+    import android.widget.Toast;  
+      
+    public class MainActivity extends AppCompatActivity {  
+        DynamicReceiver dynamicReceiver;  
+        @Override  
+        protected void onCreate(Bundle savedInstanceState) {  
+            super.onCreate(savedInstanceState);  
+            setContentView(R.layout.activity_main);  
+            IntentFilter filter = new IntentFilter();  
+            filter.addAction("panhouye");  
+            dynamicReceiver = new DynamicReceiver();  
+            registerReceiver(dynamicReceiver,filter);  
+        }  
+        //静态广播点击  
+        public void send(View v){  
+            Intent intent = new Intent();  
+            //设置与动态相同的Action，方便同时触发静态与动态  
+            intent.setAction("panhouye");  
+            intent.putExtra("info","潘侯爷");  
+            sendBroadcast(intent);//默认广播  
+        }  
+        @Override  
+        protected void onPause() {  
+            super.onPause();  
+            unregisterReceiver(new MyReceiver());  
+        }  
+        class DynamicReceiver extends BroadcastReceiver{  
+            @Override  
+            public void onReceive(Context context, Intent intent) {  
+                Toast t = Toast.makeText(context,"动态广播："+ intent.getStringExtra("info"), Toast.LENGTH_SHORT);  
+                t.setGravity(Gravity.TOP,0,0);  
+                t.show();  
+            }  
+        }  
+    }  
+（2）将动态优先级设置为最低-1000，静态优先级设置为最高1000
+
+显示效果如下（动态仍先于静态被接收到）：
+    protected void onCreate(Bundle savedInstanceState) {  
+            super.onCreate(savedInstanceState);  
+            setContentView(R.layout.activity_main);  
+            IntentFilter filter = new IntentFilter();  
+            filter.addAction("panhouye");  
+            filter.setPriority(-1000);//设置动态优先级  
+            dynamicReceiver = new DynamicReceiver();  
+            registerReceiver(dynamicReceiver,filter);  
+        }  
+
+AndroidMainfest.xml中静态优先级设置如下：
+
+[java] view plain copy
+
+    <receiver  
+        android:name=".MyReceiver"  
+        android:enabled="true"  
+        android:exported="true">  
+        //设置静态优先级  
+        <intent-filter android:priority="1000">  
+              <action android:name="panhouye" />  
+        </intent-filter>  
+    </receiver>  
+
+
+四、在有序广播下两种注册方式比较
+静态广播1（优先级为200），静态广播2（优先级为300），静态广播3（优先级为400），静态广播优先级为（-100），动态广播优先级为0。显示效果如下：
+出现顺序由优先级决定，由高到低分别为静态3-静态2-静态1-动-静态。
+
+五、接受打电话的广播，程序运行与结束时比较两种注册方式
+   <manifest xmlns:android="http://schemas.android.com/apk/res/android"  
+        package="com.example.administrator.test19">  
+        //添加拨打电话权限  
+    <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS"/>  
+        <application  
+            android:allowBackup="true"  
+            android:icon="@mipmap/ic_launcher"  
+            android:label="@string/app_name"  
+            android:supportsRtl="true"  
+            android:theme="@style/AppTheme">  
+            <activity android:name=".MainActivity">  
+                <intent-filter>  
+                    <action android:name="android.intent.action.MAIN" />  
+      
+                    <category android:name="android.intent.category.LAUNCHER" />  
+                </intent-filter>  
+            </activity>  
+            <receiver  
+                android:name=".StaticReceiver"  
+                android:enabled="true"  
+                android:exported="true">  
+                <intent-filter>  
+                    //设置打电话对应的action  
+                    <action android:name="android.intent.action.NEW_OUTGOING_CALL" />  
+                </intent-filter>  
+            </receiver>  
+        </application>  
+    </manifest>  
+
+
+MainActivity.java中实现代码
+（动态注册将解除注册放在onDestory方法内是因为在真机测试过程中拨打电话，需要返回主页面，
+而此操作会造成Activity处于onStop状态，若放在onPause中，将无法在程序运行时启用动态注册接受广播。
+真实环境下建议在onpause下解除注册，尽早释放内存，避免内存溢出）：
+import android.content.BroadcastReceiver;  
+    import android.content.Context;  
+    import android.content.Intent;  
+    import android.content.IntentFilter;  
+    import android.support.v7.app.AppCompatActivity;  
+    import android.os.Bundle;  
+    import android.util.Log;  
+      
+    public class MainActivity extends AppCompatActivity {  
+        DynamicReceiver dynamicReceiver;//声明动态注册广播接收  
+        @Override  
+        protected void onCreate(Bundle savedInstanceState) {  
+            super.onCreate(savedInstanceState);  
+            setContentView(R.layout.activity_main);  
+            IntentFilter filter = new IntentFilter();  
+            filter.addAction("android.intent.action.NEW_OUTGOING_CALL");  
+            dynamicReceiver = new DynamicReceiver();  
+            registerReceiver(dynamicReceiver,filter);  
+            Log.i("Tag","Activity-onCreate");  
+        }  
+        @Override  
+        protected void onStart() {  
+            super.onStart();  
+            Log.i("Tag","Activity-onStart");  
+        }  
+        @Override  
+        protected void onResume() {  
+            super.onResume();  
+            Log.i("Tag","Activity-onResume");  
+        }  
+        @Override  
+        protected void onPause() {  
+            super.onPause();  
+            Log.i("Tag","Activity-onPause");  
+        }  
+        @Override  
+        protected void onStop() {  
+            super.onPause();  
+            Log.i("Tag","Activity-onStop");  
+        }  
+        @Override  
+        protected void onDestroy() {  
+            super.onDestroy();  
+            Log.i("Tag","Activity-onDestroy");  
+            unregisterReceiver(dynamicReceiver);  
+        }  
+        class DynamicReceiver extends BroadcastReceiver{  
+            @Override  
+            public void onReceive(Context context, Intent intent) {  
+                Log.i("Tag","动态注册广播接收到您正在拨打电话"+getResultData());  
+            }  
+        }  
+    }  
+
+
+StaticReceiver.java中实现代码：
+
+[java] view plain copy
+
+    import android.content.BroadcastReceiver;  
+    import android.content.Context;  
+    import android.content.Intent;  
+    import android.util.Log;  
+    public class StaticReceiver extends BroadcastReceiver {  
+        public StaticReceiver() {  
+        }  
+        @Override  
+        public void onReceive(Context context, Intent intent) {  
+            Log.i("Tag","静态注册广播接收到您正在拨打电话"+getResultData());  
+        }  
+    }  
+
+1.由Log可知在未退出Activity是，两种方式均可接受到广播。
+2.在退出Activity时，拨打电话，Log如下（即便不解除注册，动态仍无法接受到广播）：
+在退出程序（Activity）时，只有静态注册方式可以接受到广播。
+
+六、总结两种注册方式特点
+广播接收器注册一共有两种形式：静态注册和动态注册．
+
+两者及其接收广播的区别：
+
+（1）动态注册广播不是常驻型广播，也就是说广播跟随Activity的生命周期。注意在Activity结束前，移除广播接收器。
+
+静态注册是常驻型，也就是说当应用程序关闭后，如果有信息广播来，程序也会被系统调用自动运行。
+
+（2）当广播为有序广播时：优先级高的先接收（不分静态和动态）。同优先级的广播接收器，动态优先于静态
+
+（3）同优先级的同类广播接收器，静态：先扫描的优先于后扫描的，动态：先注册的优先于后注册的。
+
+（4）当广播为默认广播时：无视优先级，动态广播接收器优先于静态广播接收器。同优先级的同类广播接收器，静态：先扫描的优先于后扫描的，动态：先注册的优先于后册的。
