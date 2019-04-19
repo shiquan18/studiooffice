@@ -1,4 +1,4 @@
-1 4-7
+1 4-7  （true）
 Handler 相关知识，面试必问！
 常问的点：
 Handler Looper Message 关系是什么？
@@ -11,7 +11,7 @@ Android Handler 消息机制（解惑篇）
 Android 消息机制 郭神的文章
 
 
-2
+2（true）
 Activity 相关
 启动模式以及使用场景?
 onNewIntent()和onConfigurationChanged()
@@ -24,7 +24,7 @@ onConfigurationChanged使用以及问题解决 全面得描述了各种情况
 Activity 启动流程解析
 
 
-3
+3（true）
 Fragment
 Fragment 生命周期和 Activity 对比
 Fragment 之间如何进行通信
@@ -35,7 +35,7 @@ Fragment 重叠， 如何通信
 Fragment生命周期
 
 
-4
+4（true）
 Service 相关
 进程保活
 Service的运行线程（生命周期方法全部在主线程）
@@ -47,7 +47,7 @@ startService 和 bingService区别 完整讲解了它们之间得区别
 
 
 
-5
+5（true）
 Android布局优化之ViewStub、include、merge
 什么情况下使用 ViewStub、include、merge？
 他们的原理是什么？
@@ -55,7 +55,7 @@ ViewStub、include、merge概念解析
 Android布局优化之ViewStub、include、merge使用与源码分析
 
 
-6
+6（true）
 BroadcastReceiver 相关
 注册方式，优先级
 广播类型，区别
@@ -103,7 +103,7 @@ Android自定义View的实现方法，带你一步步深入了解View(四)
 
 
 
-10
+10（true）
 Android Window、Activity、DecorView以及ViewRoot
 Window、Activity、DecorView以及ViewRoot之间的关系
 
