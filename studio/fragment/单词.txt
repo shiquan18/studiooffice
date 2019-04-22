@@ -1,5 +1,0 @@
-onAttach
-onCreateView
-onActivityCreated
-onDestroyView
-onDetach
