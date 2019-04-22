@@ -1,0 +1,206 @@
+但是Activity也有它的局限性，
+同样的界面在手机上显示可能很好看，在平板上就未必了，
+因为平板的屏幕非常大，手机的界面放在平板上可能会有过分被拉长、控件间距过大等情况。
+这个时候更好的体验效果是在Activity中嵌入"小Activity"，
+然后每个"小Activity"又可以拥有自己的布局。因此，我们今天的主角Fragment登场了。
+
+
+Fragment初探
+Android在3.0版本引入了Fragment(碎片)功能，
+它非常类似于Activity，可以像Activity一样包含布局。
+
+Fragment可以让我们更加充分地利用平板的屏幕空间，下面我们一起来探究下如何使用Fragment。
+首先需要注意，Fragment是在3.0版本引入的，如果你使用的是3.0之前的系统，需要先导入android-support-v4的jar包才能使用Fragment功能。
+
+fragment1.xml ：
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#00ff00" >
+     
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="This is fragment 1"
+            android:textColor="#000000"
+            android:textSize="25sp" />
+     
+    </LinearLayout>
+
+fragment2.xml ：
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#ffff00" >
+     
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="This is fragment 2"
+            android:textColor="#000000"
+            android:textSize="25sp" />
+     
+    </LinearLayout>
+
+    public class Fragment1 extends Fragment {
+     
+    	@Override
+    	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    		return inflater.inflate(R.layout.fragment1, container, false);
+    	}
+     
+    }
+    public class Fragment2 extends Fragment {
+     
+    	@Override
+    	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    		return inflater.inflate(R.layout.fragment2, container, false);
+    	}
+     
+    }
+
+activity_main.xml 使用android:name前缀来引用具体的Fragment：
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:baselineAligned="false" >
+     
+        <fragment
+            android:id="@+id/fragment1"
+            android:name="com.example.fragmentdemo.Fragment1"
+            android:layout_width="0dip"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+     
+        <fragment
+            android:id="@+id/fragment2"
+            android:name="com.example.fragmentdemo.Fragment2"
+            android:layout_width="0dip"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+     
+    </LinearLayout>
+    public class MainActivity extends Activity {
+     
+    	@Override
+    	protected void onCreate(Bundle savedInstanceState) {
+    		super.onCreate(savedInstanceState);
+    		setContentView(R.layout.activity_main);
+    	}
+     
+    }
+
+动态添加Fragment
+activity_main.xml，将其中对Fragment的引用都删除，只保留最外层的LinearLayout，
+并给它添加一个id，因为我们要动态添加Fragment，不用在XML里添加了，删除后代码如下：
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/main_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:baselineAligned="false" >
+     
+    </LinearLayout>
+
+然后打开MainActivity，修改其中的代码如下所示：
+    public class MainActivity extends Activity {
+     
+    	@Override
+    	protected void onCreate(Bundle savedInstanceState) {
+    		super.onCreate(savedInstanceState);
+    		setContentView(R.layout.activity_main);
+    		Display display = getWindowManager().getDefaultDisplay();
+    		if (display.getWidth() > display.getHeight()) {
+    			Fragment1 fragment1 = new Fragment1();
+    			getFragmentManager().beginTransaction().replace(R.id.main_layout, fragment1).commit();
+    		} else {
+    			Fragment2 fragment2 = new Fragment2();
+    			getFragmentManager().beginTransaction().replace(R.id.main_layout, fragment2).commit();
+    		}
+    	}
+     
+    }
+1.获取到FragmentManager，在Activity中可以直接通过getFragmentManager得到。
+2.开启一个事务，通过调用beginTransaction方法开启。
+3.向容器内加入Fragment，一般使用replace方法实现，需要传入容器的id和Fragment的实例。
+4.提交事务，调用commit方法提交。
+
+Fragment的生命周期
+    onAttach方法：    Fragment和Activity建立关联的时候调用。
+    onCreateView方法：为Fragment加载布局时调用。
+    onActivityCreated方法：当Activity中的onCreate方法执行完后调用。
+    onDestroyView方法：Fragment中的布局被移除时调用。
+    onDetach方法：Fragment和Activity解除关联的时候调用。
+
+
+Fragment之间进行通信
+打开fragment2.xml，在这个布局里面添加一个按钮：
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#ffff00" >
+     
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="This is fragment 2"
+            android:textColor="#000000"
+            android:textSize="25sp" />
+        
+        <Button 
+            android:id="@+id/button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Get fragment1 text"
+            />
+     
+    </LinearLayout>
+
+fragment1.xml，为TextView添加一个id：
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#00ff00" >
+     
+        <TextView
+            android:id="@+id/fragment1_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="This is fragment 1"
+            android:textColor="#000000"
+            android:textSize="25sp" />
+     
+    </LinearLayout>
+
+接着打开Fragment2.java，添加onActivityCreated方法，并处理按钮的点击事件：
+
+    public class Fragment2 extends Fragment {
+     
+    	@Override
+    	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    		return inflater.inflate(R.layout.fragment2, container, false);
+    	}
+     
+    	@Override
+    	public void onActivityCreated(Bundle savedInstanceState) {
+    		super.onActivityCreated(savedInstanceState);
+    		Button button = (Button) getActivity().findViewById(R.id.button);
+    		button.setOnClickListener(new OnClickListener() {
+    			@Override
+    			public void onClick(View v) {
+    				TextView textView = (TextView) getActivity().findViewById(R.id.fragment1_text);
+    				Toast.makeText(getActivity(), textView.getText(), Toast.LENGTH_LONG).show();
+    			}
+    		});
+    	}
+     
+    }
+getActivity方法可以让Fragment获取到关联的Activity，
+然后再调用Activity的findViewById方法，
+就可以获取到和这个Activity关联的其它Fragment的视图了。

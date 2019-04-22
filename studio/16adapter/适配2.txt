@@ -1,0 +1,525 @@
+Android屏幕适配出现的原因
+
+在我们学习如何进行屏幕适配之前，我们需要先了解下为什么Android需要进行屏幕适配。
+Android系统
+开放性，任何用户、开发者、OEM厂商、运营商都可以对Android进行定制，修改成他们想要的样子。
+
+但是这种“碎片化”到底到达什么程度呢？
+在2012年，OpenSignalMaps（以下简称OSM）发布了第一份Android碎片化报告，统计数据表明，
+    2012年，支持Android的设备共有3997种。
+    2013年，支持Android的设备共有11868种。
+    2014年，支持Android的设备共有18796种。
+
+当今Android系统碎片化问题的严重性，而随着支持Android系统的设备(手机、平板、电视、手表)的增多，屏幕的碎片化。
+
+现在你应该很清楚为什么要对Android的屏幕进行适配了吧？
+屏幕尺寸这么多，为了让我们开发的程序能够比较美观的显示在 不同尺寸、分辨率、像素密度 的设备上，
+那就要在开发的过程中进行处理，至于如何去进行处理，这就是我们今天的主题了。
+
+从几寸的智能手机，到10寸的平板电脑，再到几十寸的数字电视，我们应该适配哪些设备呢？
+将问题 从单纯的尺寸大小 转换到 像素大小 和 像素密度 的角度来。
+
+下图是2014年初，友盟统计的占比5%以上的6个主流分辨率，
+可以看出，占比最高的是480*800，320*480的设备竟然也占据了很大比例，
+但是和半年前的数据相比较，中低分辨率(320*480、480*800)的比例在减少，
+而中高分辨率的比例则在不断地增加。
+虽然每个分辨率所占的比例在变化，但是总的趋势没变，还是这六种，只是分辨率在不断地提高。
+所以说，我们只要尽量适配这几种分辨率，就可以在大部分的手机上正常运行了。
+
+
+
+重要概念
+
+
+什么是屏幕尺寸、屏幕分辨率、屏幕像素密度？
+什么是dp、dip、dpi、sp、px？他们之间的关系是什么？
+什么是mdpi、hdpi、xdpi、xxdpi？如何计算和区分？
+
+在下面的内容中我们将介绍这些概念。
+
+屏幕尺寸
+屏幕尺寸指屏幕的对角线的长度，单位是英寸，1英寸=2.54厘米
+比如常见的屏幕尺寸有2.4、2.8、3.5、3.7、4.2、5.0、5.5、6.0等
+
+屏幕分辨率
+屏幕分辨率是指在 横纵向上 的像素点数，单位是px，1px=1个像素点。一般以纵向像素*横向像素，如1960*1080。
+
+屏幕像素密度
+屏幕像素密度是指 每英寸上 的像素点数，单位是dpi，即“dot per inch”的缩写。
+屏幕像素密度与 屏幕尺寸和屏幕分辨率有关，在单一变化条件下，屏幕尺寸越小、分辨率越高，像素密度越大，反之越小。
+
+dp、dip、dpi、sp、px
+
+px我们应该是比较熟悉的，前面的分辨率就是用的像素为单位，大多数情况下，比如UI设计、Android原生API都会以px作为统一的计量单位，像是获取屏幕宽高等。
+
+dip和dp是一个意思，都是Density Independent Pixels的缩写，即密度无关像素，
+上面我们说过，dpi是屏幕像素密度，假如一英寸里面有160个像素，这个屏幕的像素密度就是160dpi，
+
+那么在这种情况下，dp和px如何换算呢？
+在Android中，规定以160dpi为基准，1dip=1px，如果密度是320dpi，则1dip=2px，以此类推。
+
+假如同样都是画一条320px的线，
+在480*800分辨率手机上显示为2/3屏幕宽度，
+在320*480的手机上则占满了全屏，
+如果使用dp为单位，在这两种分辨率下，160dp都显示为屏幕一半的长度。
+这也是为什么在Android开发中，写布局的时候要尽量使用dp而不是px的原因。
+
+而sp，即scale-independent pixels，与dp类似，但是可以根据文字大小首选项进行放缩，是设置字体大小的御用单位。
+
+mdpi、hdpi、xdpi、xxdpi
+其实之前还有个ldpi，但是随着移动设备配置的不断升级，这个像素密度的设备已经很罕见了，所在现在适配时不需考虑。
+
+mdpi、hdpi、xdpi、xxdpi用来修饰Android中的drawable文件夹及values文件夹，用来区分不同像素密度下的图片和dimen值。
+
+那么如何区分呢？Google官方指定按照下列标准进行区分：
+名称 	像素密度范围
+mdpi 	120dpi~160dpi
+hdpi 	160dpi~240dpi
+xhdpi 	240dpi~320dpi
+xxhdpi 	320dpi~480dpi
+xxxhdpi 	480dpi~640dpi
+
+在进行开发的时候，我们需要把合适大小的图片放在合适的文件夹里面。下面以图标设计为例进行介绍。
+
+在设计图标时，对于五种主流的像素密度（MDPI、HDPI、XHDPI、XXHDPI 和 XXXHDPI）应按照 2:3:4:6:8 的比例进行缩放。
+例如，一个启动图标的尺寸为48x48 dp，
+这表示在 MDPI 的屏幕上其实际尺寸应为 48x48 px，
+在 HDPI 的屏幕上其实际大小是 MDPI 的 1.5 倍 (72x72 px)，
+在 XDPI 的屏幕上其实际大小是 MDPI 的 2 倍 (96x96 px)，依此类推。
+
+虽然 Android 也支持低像素密度 (LDPI) 的屏幕，但无需为此费神，
+系统会自动将 HDPI 尺寸的图标缩小到 1/2 进行匹配。
+
+下图为图标的各个屏幕密度的对应尺寸
+屏幕密度 	图标尺寸
+mdpi 	48x48px
+hdpi 	72x72px
+xhdpi 	96x96px
+xxhdpi 	144x144px
+xxxhdpi 	192x192px
+
+
+
+
+解决方案
+
+
+支持各种屏幕尺寸
+使用wrap_content、match_parent、weight
+
+要确保布局的灵活性并适应各种尺寸的屏幕，应使用 “wrap_content” 和 “match_parent” 控制某些视图组件的宽度和高度。
+
+使用 “wrap_content”，系统就会将视图的宽度或高度设置成所需的最小尺寸以适应视图中的内容，
+而 “match_parent”（在低于 API 级别 8 的级别中称为 “fill_parent”）则会展开组件以匹配其父视图的尺寸。
+
+如果使用 “wrap_content” 和 “match_parent” 尺寸值而不是硬编码的尺寸，
+视图就会相应地仅使用自身所需的空间或展开以填满可用空间。
+此方法可让布局正确适应各种屏幕尺寸和屏幕方向。
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <LinearLayout android:layout_width="match_parent"
+                  android:id="@+id/linearLayout1"  
+                  android:gravity="center"
+                  android:layout_height="50dp">
+        <ImageView android:id="@+id/imageView1"
+                   android:layout_height="wrap_content"
+                   android:layout_width="wrap_content"
+                   android:src="@drawable/logo"
+                   android:paddingRight="30dp"
+                   android:layout_gravity="left"
+                   android:layout_weight="0" />
+        <View android:layout_height="wrap_content"
+              android:id="@+id/view1"
+              android:layout_width="wrap_content"
+              android:layout_weight="1" />
+        <Button android:id="@+id/categorybutton"
+                android:background="@drawable/button_bg"
+                android:layout_height="match_parent"
+                android:layout_weight="0"
+                android:layout_width="120dp"
+                style="@style/CategoryButtonStyle"/>
+    </LinearLayout>
+
+    <fragment android:id="@+id/headlines"
+              android:layout_height="fill_parent"
+              android:name="com.example.android.newsreader.HeadlinesFragment"
+              android:layout_width="match_parent" />
+</LinearLayout>
+
+weight是线性布局的一个独特的属性，我们可以使用这个属性来按照比例对界面进行分配，完成一些特殊的需求。
+
+但是，我们对于这个属性的计算应该如何理解呢？
+
+我们在布局里面设置为线性布局，横向排列，然后放置两个宽度为0dp的按钮，分别设置weight为1和2，
+在效果图中，我们可以看到两个按钮按照1：2的宽度比例正常排列了，这也是我们经常使用到的场景，
+这是时候很好理解，Button1的宽度就是1/(1+2) = 1/3，Button2的宽度则是2/(1+2) = 2/3，我们可以很清楚的明白这种情景下的占比如何计算。
+
+但是假如我们的宽度不是0dp(wrap_content和0dp的效果相同)，则是match_parent呢？
+
+下面是设置为match_parent的效果
+我们可以看到，在这种情况下，占比和上面正好相反，这是怎么回事呢？说到这里，我们就不得不提一下weight的计算方法了。
+
+android:layout_weight的真实含义是:
+如果View设置了该属性并且有效，那么该 View的宽度=原有宽度(android:layout_width)加上剩余空间的占比。
+Button1的weight=1，剩余宽度占比为1/(1+2)= 1/3，所以最终宽度为L+1/3*(-L)=2/3L，Button2的计算类似，最终宽度为L+2/3(-L)=1/3L。
+
+这是在水平方向上的，那么在垂直方向上也是这样吗？
+下面是测试代码和效果
+如果是垂直方向，那么我们应该改变的是layout_height的属性，下面是0dp的显示效果
+下面是match_parent的显示效果，结论和水平是完全一样的
+
+虽然说我们演示了match_parent的显示效果，并说明了原因，但是在真正用的时候，我们都是设置某一个属性为0dp，然后按照权重计算所占百分比。
+
+
+
+使用相对布局，禁用绝对布局
+
+
+在开发中，我们大部分时候使用的都是线性布局、相对布局和帧布局，绝对布局由于适配性极差，所以极少使用。
+
+由于各种布局的特点不一样，所以不能说哪个布局好用，到底应该使用什么布局只能根据实际需求来确定。
+我们可以使用 LinearLayout 的嵌套实例并结合 “wrap_content” 和 “match_parent”，以便构建相当复杂的布局。
+不过，我们无法通过 LinearLayout 精确控制子视图的特殊关系；
+系统会将 LinearLayout 中的视图直接并排列出。
+
+如果我们需要将子视图排列出各种效果而不是一条直线，
+通常更合适的解决方法是使用 RelativeLayout，
+这样就可以根据各组件之间的特殊关系指定布局了。
+例如，我们可以将某个子视图对齐到屏幕左侧，同时将另一个视图对齐到屏幕右侧。
+
+下面的代码以官方Demo为例说明。
+
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <TextView
+        android:id="@+id/label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Type here:"/>
+    <EditText
+        android:id="@+id/entry"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/label"/>
+    <Button
+        android:id="@+id/ok"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/entry"
+        android:layout_alignParentRight="true"
+        android:layout_marginLeft="10dp"
+        android:text="OK" />
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toLeftOf="@id/ok"
+        android:layout_alignTop="@id/ok"
+        android:text="Cancel" />
+</RelativeLayout>
+虽然控件的大小由于屏幕尺寸的增加而发生了改变，但是我们可以看到，由于使用了相对布局，所以控件之前的位置关系并没有发生什么变化，这说明我们的适配成功了。
+
+
+使用限定符
+
+
+使用尺寸限定符
+
+上面所提到的灵活布局或者是相对布局，可以为我们带来的优势就只有这么多了。
+虽然这些布局可以拉伸组件内外的空间以适应各种屏幕，
+但它们不一定能为每种屏幕都提供最佳的用户体验。
+因此，我们的应用不仅仅只实施灵活布局，还应该应针对各种屏幕配置提供一些备用布局。
+
+如何做到这一点呢？
+我们可以通过使用配置限定符，在运行时根据当前的设备配置自动选择合适的资源了，例如根据各种屏幕尺寸选择不同的布局。
+
+很多应用会在较大的屏幕上实施“双面板”模式，即在一个面板上显示项目列表，而在另一面板上显示对应内容。
+平板电脑和电视的屏幕已经大到可以同时容纳这两个面板了，但手机屏幕就需要分别显示。因此，我们可以使用以下文件以便实施这些布局：
+
+res/layout/main.xml，单面板（默认）布局：
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <fragment android:id="@+id/headlines"
+              android:layout_height="fill_parent"
+              android:name="com.example.android.newsreader.HeadlinesFragment"
+              android:layout_width="match_parent" />
+</LinearLayout>
+
+res/layout-large/main.xml，双面板布局：
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="horizontal">
+    <fragment android:id="@+id/headlines"
+              android:layout_height="fill_parent"
+              android:name="com.example.android.newsreader.HeadlinesFragment"
+              android:layout_width="400dp"
+              android:layout_marginRight="10dp"/>
+    <fragment android:id="@+id/article"
+              android:layout_height="fill_parent"
+              android:name="com.example.android.newsreader.ArticleFragment"
+              android:layout_width="fill_parent" />
+</LinearLayout>
+
+请注意第二种布局名称目录中的 large 限定符。
+系统会在属于较大屏幕（例如 7 英寸或更大的平板电脑）的设备上选择此布局。
+系统会在较小的屏幕上选择其他布局（无限定符）。
+
+
+使用最小宽度限定符
+
+在版本低于 3.2 的 Android 设备上，开发人员遇到的问题之一是“较大”屏幕的尺寸范围，
+该问题会影响戴尔 Streak、早期的 Galaxy Tab 以及大部分 7 英寸平板电脑。
+即使这些设备的屏幕属于“较大”的尺寸，但很多应用可能会针对此类别中的各种设备（例如 5 英寸和 7 英寸的设备）显示不同的布局。
+这就是 Android 3.2 版在引入其他限定符的同时引入“最小宽度”限定符的原因。
+
+最小宽度限定符可让您通过指定某个最小宽度（以 dp 为单位）来定位屏幕。
+例如，标准 7 英寸平板电脑的最小宽度为 600 dp，因此如果您要在此类屏幕上的用户界面中使用双面板（但在较小的屏幕上只显示列表），
+您可以使用上文中所述的单面板和双面板这两种布局，但您应使用 sw600dp 指明双面板布局仅适用于最小宽度为 600 dp 的屏幕，而不是使用 large 尺寸限定符。
+
+res/layout/main.xml，单面板（默认）布局：
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <fragment android:id="@+id/headlines"
+              android:layout_height="fill_parent"
+              android:name="com.example.android.newsreader.HeadlinesFragment"
+              android:layout_width="match_parent" />
+</LinearLayout>
+
+res/layout-sw600dp/main.xml，双面板布局：
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="horizontal">
+    <fragment android:id="@+id/headlines"
+              android:layout_height="fill_parent"
+              android:name="com.example.android.newsreader.HeadlinesFragment"
+              android:layout_width="400dp"
+              android:layout_marginRight="10dp"/>
+    <fragment android:id="@+id/article"
+              android:layout_height="fill_parent"
+              android:name="com.example.android.newsreader.ArticleFragment"
+              android:layout_width="fill_parent" />
+</LinearLayout>
+
+也就是说，对于最小宽度大于等于 600 dp 的设备，系统会选择 layout-sw600dp/main.xml（双面板）布局，
+否则系统就会选择 layout/main.xml（单面板）布局。
+
+但 Android 版本低于 3.2 的设备不支持此技术，原因是这些设备无法将 sw600dp 识别为尺寸限定符，因此我们仍需使用 large 限定符。
+这样一来，就会有一个名称为 res/layout-large/main.xml 的文件（与 res/layout-sw600dp/main.xml 一样）。
+但是没有太大关系，我们将马上学习如何避免此类布局文件出现的重复。
+
+
+使用布局别名
+
+最小宽度限定符仅适用于 Android 3.2 及更高版本。
+因此，如果我们仍需使用与较低版本兼容的概括尺寸范围（小、正常、大和特大）。
+例如，如果要将用户界面设计成在手机上显示单面板，但在 7 英寸平板电脑、电视和其他较大的设备上显示多面板，那么我们就需要提供以下文件：
+
+    res/layout/main.xml: 单面板布局
+    res/layout-large: 多面板布局
+    res/layout-sw600dp: 多面板布局
+
+后两个文件是相同的，因为其中一个用于和 Android 3.2 设备匹配，而另一个则是为使用较低版本 Android 的平板电脑和电视准备的。
+
+要避免平板电脑和电视的文件出现重复（以及由此带来的维护问题），您可以使用别名文件。例如，您可以定义以下布局：
+
+    res/layout/main.xml，单面板布局
+    res/layout/main_twopanes.xml，双面板布局
+
+然后添加这两个文件：
+
+res/values-large/layout.xml:
+<resources>
+    <item name="main" type="layout">@layout/main_twopanes</item>
+</resources>
+
+res/values-sw600dp/layout.xml:
+<resources>
+    <item name="main" type="layout">@layout/main_twopanes</item>
+</resources>
+
+后两个文件的内容相同，但它们并未实际定义布局。
+它们只是将 main 设置成了 main_twopanes 的别名。
+由于这些文件包含 large 和 sw600dp 选择器，因此无论 Android 版本如何，
+系统都会将这些文件应用到平板电脑和电视上（版本低于 3.2 的平板电脑和电视会匹配 large，版本高于 3.2 的平板电脑和电视则会匹配 sw600dp）。
+
+
+使用屏幕方向限定符
+某些布局会同时支持横向模式和纵向模式，但我们可以通过调整优化其中大部分布局的效果。
+在新闻阅读器示例应用中，每种屏幕尺寸和屏幕方向下的布局行为方式如下所示：
+
+    小屏幕，纵向：单面板，带徽标
+    小屏幕，横向：单面板，带徽标
+    7 英寸平板电脑，纵向：单面板，带操作栏
+    7 英寸平板电脑，横向：双面板，宽，带操作栏
+    10 英寸平板电脑，纵向：双面板，窄，带操作栏
+    10 英寸平板电脑，横向：双面板，宽，带操作栏
+    电视，横向：双面板，宽，带操作栏
+
+因此，这些布局中的每一种都定义在了 res/layout/ 目录下的某个 XML 文件中。为了继续将每个布局分配给各种屏幕配置，该应用会使用布局别名将两者相匹配：
+
+res/layout/onepane.xml:(单面板)
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <fragment android:id="@+id/headlines"
+              android:layout_height="fill_parent"
+              android:name="com.example.android.newsreader.HeadlinesFragment"
+              android:layout_width="match_parent" />
+</LinearLayout>
+
+res/layout/onepane_with_bar.xml:(单面板带操作栏)
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <LinearLayout android:layout_width="match_parent"
+                  android:id="@+id/linearLayout1"  
+                  android:gravity="center"
+                  android:layout_height="50dp">
+        <ImageView android:id="@+id/imageView1"
+                   android:layout_height="wrap_content"
+                   android:layout_width="wrap_content"
+                   android:src="@drawable/logo"
+                   android:paddingRight="30dp"
+                   android:layout_gravity="left"
+                   android:layout_weight="0" />
+        <View android:layout_height="wrap_content"
+              android:id="@+id/view1"
+              android:layout_width="wrap_content"
+              android:layout_weight="1" />
+        <Button android:id="@+id/categorybutton"
+                android:background="@drawable/button_bg"
+                android:layout_height="match_parent"
+                android:layout_weight="0"
+                android:layout_width="120dp"
+                style="@style/CategoryButtonStyle"/>
+    </LinearLayout>
+
+    <fragment android:id="@+id/headlines"
+              android:layout_height="fill_parent"
+              android:name="com.example.android.newsreader.HeadlinesFragment"
+              android:layout_width="match_parent" />
+</LinearLayout>
+
+res/layout/twopanes.xml:(双面板，宽布局)
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="horizontal">
+    <fragment android:id="@+id/headlines"
+              android:layout_height="fill_parent"
+              android:name="com.example.android.newsreader.HeadlinesFragment"
+              android:layout_width="400dp"
+              android:layout_marginRight="10dp"/>
+    <fragment android:id="@+id/article"
+              android:layout_height="fill_parent"
+              android:name="com.example.android.newsreader.ArticleFragment"
+              android:layout_width="fill_parent" />
+</LinearLayout>
+
+res/layout/twopanes_narrow.xml:(双面板，窄布局)
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="horizontal">
+    <fragment android:id="@+id/headlines"
+              android:layout_height="fill_parent"
+              android:name="com.example.android.newsreader.HeadlinesFragment"
+              android:layout_width="200dp"
+              android:layout_marginRight="10dp"/>
+    <fragment android:id="@+id/article"
+              android:layout_height="fill_parent"
+              android:name="com.example.android.newsreader.ArticleFragment"
+              android:layout_width="fill_parent" />
+</LinearLayout>
+
+既然我们已定义了所有可能的布局，那就只需使用配置限定符将正确的布局映射到各种配置即可。
+
+现在只需使用布局别名技术即可做到这一点：
+
+res/values/layouts.xml:
+
+<resources>
+    <item name="main_layout" type="layout">@layout/onepane_with_bar</item>
+    <bool name="has_two_panes">false</bool>
+</resources>
+
+res/values-sw600dp-land/layouts.xml:
+
+<resources>
+    <item name="main_layout" type="layout">@layout/twopanes</item>
+    <bool name="has_two_panes">true</bool>
+</resources>
+
+res/values-sw600dp-port/layouts.xml:
+
+<resources>
+    <item name="main_layout" type="layout">@layout/onepane</item>
+    <bool name="has_two_panes">false</bool>
+</resources>
+
+res/values-large-land/layouts.xml:
+
+<resources>
+    <item name="main_layout" type="layout">@layout/twopanes</item>
+    <bool name="has_two_panes">true</bool>
+</resources>
+
+res/values-large-port/layouts.xml:
+
+<resources>
+    <item name="main_layout" type="layout">@layout/twopanes_narrow</item>
+    <bool name="has_two_panes">true</bool>
+</resources>
+
+
+使用自动拉伸位图
+
+支持各种屏幕尺寸通常意味着您的图片资源还必须能适应各种尺寸。
+例如，无论要应用到什么形状的按钮上，按钮背景都必须能适应。
+
+如果在可以更改尺寸的组件上使用了简单的图片，您很快就会发现显示效果多少有些不太理想，
+因为系统会在运行时平均地拉伸或收缩您的图片。
+解决方法为使用自动拉伸位图，这是一种格式特殊的 PNG 文件，其中会指明可以拉伸以及不可以拉伸的区域。
+
+.9的制作，实际上就是在原图片上添加1px的边界，然后按照我们的需求，把对应的位置设置成黑色线，系统就会根据我们的实际需求进行拉伸。
+
+
+提供备用位图
+
+由于 Android 可在具有各种屏幕密度的设备上运行，
+因此我们提供的位图资源应始终可以满足各类普遍密度范围的要求：
+低密度、中等密度、高密度以及超高密度。这将有助于我们的图片在所有屏幕密度上都能得到出色的质量和效果。
+
+要生成这些图片，我们应先提取矢量格式的原始资源，然后根据以下尺寸范围针对各密度生成相应的图片。
+    xhdpi：2.0
+    hdpi：1.5
+    mdpi：1.0（最低要求）
+    ldpi：0.75
+
+
+支持各种屏幕密度
+使用非密度制约像素
+
+由于各种屏幕的像素密度都有所不同，因此相同数量的像素在不同设备上的实际大小也有所差异，
+这样使用像素定义布局尺寸就会产生问题。因此，请务必使用 dp 或 sp 单位指定尺寸。
+dp 是一种非密度制约像素，其尺寸与 160 dpi 像素的实际尺寸相同。
+sp 也是一种基本单位，但它可根据用户的偏好文字大小进行调整（即尺度独立性像素），因此我们应将该测量单位用于定义文字大小。

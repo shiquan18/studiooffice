@@ -1,0 +1,617 @@
+二、Fragment回退栈管理
+
+Activity是由任务栈管理的，遵循先进后出的原则，
+Fragment也可以实现类似的栈管理，从而实现多个Fragment先后添加后可以返回上一个Fragment，
+当activity容器内没有Fragment时回退则退出Activity。
+
+具体方法：FragmentTransaction.addToBackStack(String) // 通常传入null即可
+
+代码如下：
+
+Fragment f = new Fragment();  
+FragmentManager fm = getSupportFragmentManager();  
+FragmentTransaction ftx = fm.beginTransaction();  
+ftx.replace(R.id.fragment_container, f, "ONE");  
+ftx.addToBackStack(null);  
+ftx.commit();
+    注：
+    1.activity的第一个Fragment(根Fragment)可以不添加回退栈，
+    这样最后一个Fragment按返回时就不会空白而是直接退出activity。
+    2.调用addToBackStack(null)将当前的事务添加到了回退栈，
+    调用replace方法后Fragment实例不会被销毁，但是视图层次会被销毁，即会调用onDestoryView和onCreateView。
+    若需保存当前fragment视图状态，则可以使用hide后add新的Fragment
+
+三、Fragment与Activity通信
+
+a、如果Activity中包含自己管理的Fragment的引用，可以通过引用直接访问所有的Fragment的public方法
+b、如果Activity中未保存任何Fragment的引用，可以通过每个Fragment都有一个唯一的TAG或者ID使用getFragmentManager.findFragmentByTag()或者findFragmentById()获得任何Fragment实例，然后进行操作。
+c、在Fragment中可以通过getActivity得到当前绑定的Activity的实例，然后进行操作。
+注：如果在Fragment中需要Context，可以通过调用getActivity()，如果该Context需要在Activity被销毁后还存在，则使用getActivity().getApplicationContext()。
+
+推荐方式：
+1.接口（Fragment返回数据给Activity）
+Fragment部分代码：
+public class TestFragment extends Fragment {
+
+    private OnSaveListener listener;
+
+    public void setListener(OnSaveListener listener) {
+        this.listener = listener;
+    }
+
+    public interface OnSaveListener {
+        void onSaveFinished(boolean result);
+
+        void onSaveStart();
+    }
+
+
+    @OnClick(R.id.btn_save)
+    public void save() {
+        ....
+        listener.onSaveFinished(true);
+    }
+}
+
+Activity部分代码：
+
+TestFragment f = new TestFragment();
+f.setListener(new ShowCheckFragment.OnSaveListener() {
+
+    @Override
+    public void onSaveFinished(boolean result) {
+        ......
+    }
+
+    @Override
+    public void onSaveStart() {
+        ......
+    }
+});
+
+FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.fragment_container, f);
+fragmentTransaction.commit();
+
+2.Fragment Arguments（传递数据到Fragment中）
+
+Fragment部分代码：
+public class TestFragment extends Fragment  
+{  
+
+    private String mArgument;  
+    public static final String ARGUMENT = "argument";  
+
+    @Override  
+    public void onCreate(Bundle savedInstanceState)  
+    {  
+        super.onCreate(savedInstanceState);   
+        Bundle bundle = getArguments();  
+        if (bundle != null)  
+            mArgument = bundle.getString(ARGUMENT);  
+
+    }  
+
+    /** 
+     * 传入需要的参数，设置给arguments 
+     * @param argument 
+     * @return 
+     */  
+    public static TestFragment newInstance(String argument)  
+    {  
+        Bundle bundle = new Bundle();  
+        bundle.putString(ARGUMENT, argument);  
+        TestFragment f = new TestFragment();  
+        f.setArguments(bundle);  
+        return f;  
+    }
+Fragment添加newInstance静态方法给实例化时调用，
+将需要的参数传入，设置到bundle中，然后setArguments(bundle)，
+
+四、Fragment重叠问题
+
+当屏幕旋转或者内存重启（Fragment以及容器activity被系统回收后再打开时重新初始化）会导致Fragment重叠问题，
+是因为activity本身重启的时候会恢复Fragment，
+然后创建Fragment的代码又会新建一个Fragment的原因。
+
+解决方法：在onCreate方法中判断参数Bundle savedInstanceState，
+为空时初始化Fragment实例，然后在Fragment中通过onSaveInstanceState的方法恢复数据
+
+代码：
+private TestFragment f;
+
+protected void onCreate(Bundle savedInstanceState)  
+    {  
+        super.onCreate(savedInstanceState);    
+        setContentView(R.layout.activity_main);  
+
+        Log.e(TAG, savedInstanceState+"");  
+
+        if(savedInstanceState == null)  
+        {  
+            f = new TestFragment();  
+            FragmentManager fm = getSupportFragmentManager();  
+            FragmentTransaction tx = fm.beginTransaction();  
+            tx.add(R.id.id_content, f, "ONE");  
+            tx.commit();  
+        }  
+
+
+
+    }  
+五、Fragment与ActionBar和MenuItem
+
+Fragment可以添加自己的MenuItem到Activity的ActionBar或者可选菜单中。
+a、在Fragment的onCreate中调用 setHasOptionsMenu(true);
+b、然后在Fragment类中实现onCreateOptionsMenu;
+c、如果希望在Fragment中处理MenuItem的点击，也可以实现onOptionsItemSelected；Activity也可以直接处理该MenuItem的点击事件。
+
+Fragment部分代码:
+public class TestFragment extends Fragment  
+{  
+
+    @Override  
+    public void onCreate(Bundle savedInstanceState)  
+    {  
+        super.onCreate(savedInstanceState);  
+        setHasOptionsMenu(true);  
+    }  
+
+    ......
+
+    @Override  
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater)  
+    {  
+        inflater.inflate(R.menu.fragment_menu, menu);  
+    }  
+
+    @Override  
+    public boolean onOptionsItemSelected(MenuItem item)  
+    {  
+        switch (item.getItemId())  
+        {  
+        case R.id.id_menu_test:  
+            ...... 
+            break;  
+        }  
+        return true;  
+    }  
+
+} 
+
+Activity代码：
+
+    @Override  
+    public boolean onCreateOptionsMenu(Menu menu)  
+    {  
+        super.onCreateOptionsMenu(menu);  
+        getMenuInflater().inflate(R.menu.main, menu);  
+        return true;  
+    }  
+
+    @Override  
+    public boolean onOptionsItemSelected(MenuItem item)  
+    {  
+        switch (item.getItemId())  
+        {  
+        case R.id.action_settings:  
+            ......  
+            return true;  
+        default:  
+            //如果希望Fragment自己处理MenuItem点击事件，一定不要忘了调用super.xxx  
+            return super.onOptionsItemSelected(item);  
+        }  
+    }  
+    注：如果要Fragmenr自己处理MenuItem点击事件，一定要调用super.xx
+
+六、没有布局的Fragment—保存大量数据
+
+主要用于处理异步请求带来的数据保存问题，尤其是异步请求未完成时屏幕旋转这种现象。步骤如下：
+1、继承Fragment，声明引用指向你的有状态的对象
+2、当Fragment创建时调用setRetainInstance(boolean)
+3、把Fragment实例添加到Activity中
+4、当Activity重新启动后，使用FragmentManager对Fragment进行恢复
+
+Fragment部分代码：
+
+public class TestFragment extends Fragment  
+{  
+
+    // data object we want to retain  
+    // 保存一个异步的任务  
+    private MyAsyncTask data;  
+
+    // this method is only called once for this fragment  
+    @Override  
+    public void onCreate(Bundle savedInstanceState)  
+    {  
+        super.onCreate(savedInstanceState);  
+        // retain this fragment  
+        setRetainInstance(true);  
+    }  
+
+    public void setData(MyAsyncTask data)  
+    {  
+        this.data = data;  
+    }  
+
+    public MyAsyncTask getData()  
+    {  
+        return data;  
+    }  
+
+
+}
+AsyncTask部分代码：
+
+public class MyAsyncTask extends AsyncTask<Void, Void, Void>  
+{  
+    private FixProblemsActivity activity;  
+    /** 
+     * 是否完成 
+     */  
+    private boolean isCompleted;  
+    /** 
+     * 进度框 
+     */  
+    private LoadingDialog mLoadingDialog;  
+    private List<String> items;  
+
+    public MyAsyncTask(FixProblemsActivity activity)  
+    {  
+        this.activity = activity;  
+    }  
+
+    /** 
+     * 开始时，显示加载框 
+     */  
+    @Override  
+    protected void onPreExecute()  
+    {  
+        // 使用DialogFragment创建对话框
+        mLoadingDialog = new LoadingDialog();  
+        mLoadingDialog.show(activity.getFragmentManager(), "LOADING");  
+    }  
+
+    /** 
+     * 加载数据 
+     */  
+    @Override  
+    protected Void doInBackground(Void... params)  
+    {  
+        items = loadingData();  
+        return null;  
+    }  
+
+    /** 
+     * 加载完成回调当前的Activity 
+     */  
+    @Override  
+    protected void onPostExecute(Void unused)  
+    {  
+        isCompleted = true;  
+        notifyActivityTaskCompleted();  
+        if (mLoadingDialog != null)  
+            mLoadingDialog.dismiss();  
+    }  
+
+    public List<String> getItems()  
+    {  
+        return items;  
+    }  
+
+    private List<String> loadingData()  
+    {  
+        try  
+        {  
+            Thread.sleep(5000);  
+        } catch (InterruptedException e)  
+        {  
+        }  
+        return new ArrayList<String>(Arrays.asList("通过Fragment保存大量数据",  
+                "onSaveInstanceState保存数据",  
+                "getLastNonConfigurationInstance已经被弃用", "RabbitMQ", "Hadoop",  
+                "Spark"));  
+    }  
+
+    /** 
+     * 设置Activity，因为Activity会一直变化，在onDestroy中set null
+     *  
+     * @param activity 
+     */  
+    public void setActivity(FixProblemsActivity activity)  
+    {  
+        // 如果上一个Activity销毁，将与上一个Activity绑定的DialogFragment销毁  
+        if (activity == null)  
+        {  
+            mLoadingDialog.dismiss();  
+        }  
+        // 设置为当前的Activity  
+        this.activity = activity;  
+        // 开启一个与当前Activity绑定的等待框  
+        if (activity != null && !isCompleted)  
+        {  
+            mLoadingDialog = new LoadingDialog();  
+            mLoadingDialog.show(activity.getFragmentManager(), "LOADING");  
+        }  
+        // 如果完成，通知Activity  
+        if (isCompleted)  
+        {  
+            notifyActivityTaskCompleted();  
+        }  
+    }  
+
+    private void notifyActivityTaskCompleted()  
+    {  
+        if (null != activity)  
+        {  
+            activity.onTaskCompleted();  
+        }  
+    }  
+
+}  
+Activity部分代码：
+
+public class FixProblemsActivity extends ListActivity  
+{  
+    private static final String TAG = "MainActivity";  
+    private ListAdapter mAdapter;  
+    private List<String> mDatas;  
+    private OtherRetainedFragment dataFragment;  
+    private MyAsyncTask mMyTask;  
+
+    @Override  
+    public void onCreate(Bundle savedInstanceState)  
+    {  
+        super.onCreate(savedInstanceState);  
+        Log.e(TAG, "onCreate");  
+
+        // find the retained fragment on activity restarts  
+        FragmentManager fm = getFragmentManager();  
+        dataFragment = (OtherRetainedFragment) fm.findFragmentByTag("data");  
+
+        // create the fragment and data the first time  
+        if (dataFragment == null)  
+        {  
+            // add the fragment  
+            dataFragment = new OtherRetainedFragment();  
+            fm.beginTransaction().add(dataFragment, "data").commit();  
+        }  
+        mMyTask = dataFragment.getData();  
+        if (mMyTask != null)  
+        {  
+            mMyTask.setActivity(this);  
+        } else  
+        {  
+            mMyTask = new MyAsyncTask(this);  
+            dataFragment.setData(mMyTask);  
+            mMyTask.execute();  
+        }  
+        // the data is available in dataFragment.getData()  
+    }  
+
+
+    @Override  
+    protected void onRestoreInstanceState(Bundle state)  
+    {  
+        super.onRestoreInstanceState(state);  
+        Log.e(TAG, "onRestoreInstanceState");  
+    }  
+
+
+    @Override  
+    protected void onSaveInstanceState(Bundle outState)  
+    {  
+        mMyTask.setActivity(null);  
+        super.onSaveInstanceState(outState);  
+        Log.e(TAG, "onSaveInstanceState");  
+    }  
+
+    @Override  
+    protected void onDestroy()  
+    {  
+        Log.e(TAG, "onDestroy");  
+        super.onDestroy();  
+
+    }  
+    /** 
+     * 回调 
+     */  
+    public void onTaskCompleted()  
+    {  
+        mDatas = mMyTask.getItems();  
+        mAdapter = new ArrayAdapter<String>(FixProblemsActivity.this,  
+                android.R.layout.simple_list_item_1, mDatas);  
+        setListAdapter(mAdapter);  
+    }  
+
+}  
+
+
+七、DialogFragment的使用
+
+和Fragment有着基本一致的声明周期。
+且DialogFragment也允许开发者把Dialog作为内嵌的组件进行重用，
+类似Fragment（可以在大屏幕和小屏幕显示出不同的效果）。
+使用DialogFragment至少需要实现onCreateView或者onCreateDIalog方法。
+onCreateView即使用定义的xml布局文件展示Dialog。
+onCreateDialog即利用AlertDialog或者Dialog创建出Dialog。
+
+1、重写onCreateView创建Dialog
+a.创建一个对话框布局文件
+b.继承DialogFragment，重写onCreateView方法:
+
+public class TestFragment extends DialogFragment  
+{  
+
+
+    @Override  
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,  
+            Bundle savedInstanceState)  
+    {  
+       // 隐藏对话框标题栏
+       getDialog().requestWindowFeature(Window.FEATURE_NO_TITLE); 
+        View view = inflater.inflate(R.layout.fragment_edit_name, container);  
+        return view;  
+    }  
+
+} 
+c.在Activity中调用：
+
+public void showDialog(View view)  
+    {  
+        TestDialogFragment dialog = new TestDialogFragment();  
+        dialog.show(getFragmentManager(), "TestDialog");  
+    }  
+2、重写onCreateDialog创建Dialog
+a.新建对话框布局文件
+b.继承DialogFragment重写onCreateDialog方法:
+
+public class TestFragment extends DialogFragment  
+{  
+
+    @Override  
+    public Dialog onCreateDialog(Bundle savedInstanceState)  
+    {  
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());  
+        // Get the layout inflater  
+        LayoutInflater inflater = getActivity().getLayoutInflater();  
+        View view = inflater.inflate(R.layout.fragment_test_dialog, null);  
+        // Inflate and set the layout for the dialog  
+        // Pass null as the parent view because its going in the dialog layout  
+        builder.setView(view)  
+                // Add action buttons  
+                .setPositiveButton("Test",  
+                        new DialogInterface.OnClickListener()  
+                        {  
+                            @Override  
+                            public void onClick(DialogInterface dialog, int id)  
+                            {  
+                            }  
+                        }).setNegativeButton("Cancel", null);  
+        return builder.create();  
+    }  
+} 
+c.调用：
+
+public void showDialog(View view)  
+    {  
+        TestFragment dialog = new TestFragment();  
+        dialog.show(getFragmentManager(), "testDialog");  
+    } 
+
+八、Fragment的startActivityForResult
+
+在Fragment中存在startActivityForResult（）以及onActivityResult（）方法，
+需要通过调用getActivity().setResult(、Fragment.REQUEST_CODE, intent)来设置返回。
+
+部分代码：
+
+// 传入数据
+Intent intent = new Intent(getActivity(),ContentActivity.class);  
+intent.putExtra(ContentFragment.ARGUMENT, mTitles.get(position));  
+startActivityForResult(intent, REQUEST_DETAIL);  
+
+    @Override  
+    public void onActivityResult(int requestCode, int resultCode, Intent data)  
+    {  
+        Log.e("TAG", "onActivityResult");  
+        super.onActivityResult(requestCode, resultCode, data);  
+        if(requestCode == REQUEST_DETAIL)  
+        {  
+            mTitles.set(mCurrentPos, mTitles.get(mCurrentPos)+" -- "+data.getStringExtra(ContentFragment.RESPONSE));  
+            mAdapter.notifyDataSetChanged();  
+        }  
+    } 
+
+
+
+
+    // 返回数据
+    @Override  
+    public void onCreate(Bundle savedInstanceState)  
+    {  
+        super.onCreate(savedInstanceState);  
+        Bundle bundle = getArguments();  
+        if (bundle != null)  
+        {  
+            mArgument = bundle.getString(ARGUMENT);  
+            Intent intent = new Intent();  
+            intent.putExtra(RESPONSE, "good");  
+            getActivity().setResult(ListTitleFragment.REQUEST_DETAIL, intent);  
+        }  
+
+    }  
+
+    public static ContentFragment newInstance(String argument)  
+    {  
+        Bundle bundle = new Bundle();  
+        bundle.putString(ARGUMENT, argument);  
+        ContentFragment contentFragment = new ContentFragment();  
+        contentFragment.setArguments(bundle);  
+        return contentFragment;  
+    }  
+
+九、FragmentPagerAdapter与FragmentStatePagerAdapter的区别
+
+主要区别就在与对于fragment是否销毁：
+FragmentPagerAdapter：
+对于不再需要的fragment，选择调用detach方法，仅销毁视图，并不会销毁fragment实例。
+
+FragmentStatePagerAdapter：
+会销毁不再需要的fragment，当前事务提交以后，会彻底的将fragmeng从当前Activity的FragmentManager中移除，
+state标明，销毁时，会将其onSaveInstanceState(Bundle outState)中的bundle信息保存下来，当用户切换回来，
+可以通过该bundle恢复生成新的fragment，
+也就是说，你可以在onSaveInstanceState(Bundle outState)方法中保存一些数据，在onCreate中进行恢复创建。
+
+使用FragmentStatePagerAdapter当然更省内存，但是销毁新建也是需要时间的。
+一般情况下，如果你是制作主页面，就3、4个Tab，那么可以选择使用FragmentPagerAdapter，
+如果你是用于ViewPager展示数量特别多的条目时，那么建议使用FragmentStatePagerAdapter。
+
+十、Fragment间的数据传递
+调用Fragment.setTargetFragment ，这个方法一般用于当前fragment由其它fragment启动时。
+
+部分代码：
+
+EvaluateDialog dialog = new EvaluateDialog();  
+//注意setTargetFragment  
+dialog.setTargetFragment(ContentFragment.this, REQUEST_EVALUATE);  
+dialog.show(getFragmentManager(), EVALUATE_DIALOG); 
+
+//接收返回回来的数据  
+@Override  
+public void onActivityResult(int requestCode, int resultCode, Intent data)  
+{  
+    super.onActivityResult(requestCode, resultCode, data);  
+
+    if (requestCode == REQUEST_EVALUATE)  
+    {  
+        String evaluate = data  
+                    .getStringExtra(EvaluateDialog.RESPONSE_EVALUATE);  
+        Toast.makeText(getActivity(), evaluate, Toast.LENGTH_SHORT).show();  
+        Intent intent = new Intent();  
+        intent.putExtra(RESPONSE, evaluate);  
+        getActivity().setResult(Activity.REQUEST_OK, intent);  
+        }  
+
+    } 
+
+
+
+
+public class EvaluateDialog extends DialogFragment  
+{ 
+    ......
+
+    // 设置返回数据  
+    protected void setResult(int which)  
+    {  
+        // 判断是否设置了targetFragment  
+        if (getTargetFragment() == null)  
+            return;  
+
+        Intent intent = new Intent();  
+        intent.putExtra(RESPONSE_EVALUATE, mEvaluteVals[which]);  
+        getTargetFragment().onActivityResult(ContentFragment.REQUEST_EVALUATE,  Activity.RESULT_OK, intent);            
+    }  
+}

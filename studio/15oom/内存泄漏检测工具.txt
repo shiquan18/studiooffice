@@ -1,0 +1,33 @@
+https://blog.csdn.net/itfootball/article/details/48786275
+Android性能专项测试之Heap Snapshot工具
+
+https://blog.csdn.net/u012233285/article/details/52711019
+ndroid性能专项测试之Heap Viewer工具的使用
+
+https://www.jianshu.com/p/8a24bfb4b0d6
+traceview的使用
+
+四、原理介绍
+4.1 触发检测
+每次当Activity/Fragment执行完onDestroy生命周期，
+LeakCanary就会获取到这个Activity/Fragment，
+然后初始化RefWatcher对它进行分析，查看是否存在内存泄漏。
+
+4.2 判断是否存在内存泄漏
+首先尝试着从ReferenceQueue队列中获取待分析对象
+
+（软引用和弱引用可以和一个引用队列（ReferenceQueue）联合使用，
+如果 软引用或弱引用 所引用的对象 被垃圾回收器回收，
+Java虚拟机就会把这个软引用或弱引用 加入到与之关联的 引用队列中），
+
+如果不为空，那么说明正在被系统回收，
+如果直接就返回DONE，说明已经被系统回收了，
+如果没有被系统回收，可能存在内存泄漏，
+手动触发系统GC，然后再尝试移除待分析对象，如果还存在，说明存在内存泄漏。
+
+4.3 分析内存泄漏
+确定有内存泄漏后，调用heapDumper.dumpHeap()生成.hprof文件目录。
+HAHA 是一个由 square 开源的 Android 堆分析库，
+分析 hprof 文件生成Snapshot对象。
+Snapshot用以查询对象的最短引用链。
+找到最短引用链后，定位问题，排查代码将会事半功倍。
